@@ -7,6 +7,7 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
   const [isStamp, setIsStamp] = useState(false);
+  const [stampStyle, setStampStyle] = useState('classic');
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -19,7 +20,8 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
     formData.append('photo', file);
     formData.append('place_id', place.id);
     formData.append('caption', caption);
-    formData.append('is_stamp', isStamp);
+    formData.append('is_stamp', isStamp ? 'true' : 'false');
+    formData.append('stamp_style', stampStyle);
 
     try {
       await axios.post('/api/photos', formData, {
@@ -35,6 +37,13 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
       setUploading(false);
     }
   };
+
+  const STYLES = [
+    { id: 'classic', label: 'Classique', icon: '◻️' },
+    { id: 'circle', label: 'Tampon', icon: '⚪' },
+    { id: 'hex', label: 'Hexagone', icon: '⬢' },
+    { id: 'wavy', label: 'Vague', icon: '〰️' }
+  ];
 
   return (
     <div style={{
@@ -103,16 +112,48 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
               onChange={e => setCaption(e.target.value)}
             />
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '25px', cursor: 'pointer' }} onClick={() => setIsStamp(!isStamp)}>
-              <div style={{ 
-                width: '20px', height: '20px', borderRadius: '4px', 
-                border: '2px solid var(--primary)', 
-                background: isStamp ? 'var(--primary)' : 'transparent',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {isStamp && <Check size={14} color="white" />}
+            <div style={{ marginBottom: '25px' }}>
+              <div 
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', cursor: 'pointer' }} 
+                onClick={() => setIsStamp(!isStamp)}
+              >
+                <div style={{ 
+                  width: '20px', height: '20px', borderRadius: '4px', 
+                  border: '2px solid var(--primary)', 
+                  background: isStamp ? 'var(--primary)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {isStamp && <Check size={14} color="white" />}
+                </div>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Transformer en timbre de collection</span>
               </div>
-              <span style={{ fontSize: '0.9rem' }}>Transformer en timbre de collection</span>
+
+              {isStamp && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', overflow: 'hidden' }}
+                >
+                  {STYLES.map(s => (
+                    <div 
+                      key={s.id}
+                      onClick={() => setStampStyle(s.id)}
+                      style={{
+                        padding: '10px 5px',
+                        borderRadius: '8px',
+                        background: stampStyle === s.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                        border: stampStyle === s.id ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <div style={{ fontSize: '1.2rem', marginBottom: '5px' }}>{s.icon}</div>
+                      <div style={{ fontSize: '0.7rem' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
             </div>
 
             <button 

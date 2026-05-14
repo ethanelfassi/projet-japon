@@ -2,16 +2,73 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CheckCircle, Circle, MapPin, Camera, Zap, Compass, Trash2 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-const PlaceList = ({ onAddPhoto }) => {
+const LocationPicker = ({ onLocationSelect, initialPos }) => {
+  const [position, setPosition] = useState(initialPos);
+
+  useMapEvents({
+    click(e) {
+      setPosition(e.latlng);
+      onLocationSelect(e.latlng);
+    },
+  });
+
+  return position ? <Marker position={position} /> : null;
+};
+
+const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, user }) => {
   const [places, setPlaces] = useState([]);
+  const [userGroups, setUserGroups] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [newPlace, setNewPlace] = useState({ name: '', description: '', location: '', type: 'place' });
-  const [selectedPlaceDetails, setSelectedPlaceDetails] = useState(null);
+  const [newPlace, setNewPlace] = useState({ 
+    name: '', description: '', location: '', type: 'place', lat: null, lng: null, visibility: 'public', group_id: ''
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleSearchLocation = async () => {
+    if (!searchQuery) return;
+    setIsSearching(true);
+    try {
+      const res = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ' Japan')}`);
+      if (res.data && res.data.length > 0) {
+        const { lat, lon, display_name } = res.data[0];
+        const newCoords = { lat: parseFloat(lat), lng: parseFloat(lon) };
+        setNewPlace({
+          ...newPlace,
+          lat: newCoords.lat,
+          lng: newCoords.lng,
+          location: display_name.split(',')[0] // Take first part of address
+        });
+        setSearchQuery('');
+      } else {
+        alert('Lieu non trouvé');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
     fetchPlaces();
-  }, []);
+    if (user) {
+      fetchGroups();
+    }
+  }, [user]);
+
+  const fetchGroups = async () => {
+    try {
+      const res = await axios.get('/api/groups');
+      setUserGroups(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const fetchPlaces = async () => {
     try {
@@ -37,7 +94,7 @@ const PlaceList = ({ onAddPhoto }) => {
     e.preventDefault();
     try {
       await axios.post('/api/places', newPlace);
-      setNewPlace({ name: '', description: '', location: '', type: 'place' });
+      setNewPlace({ name: '', description: '', location: '', type: 'place', lat: null, lng: null, visibility: 'public', group_id: '' });
       setShowAdd(false);
       fetchPlaces();
     } catch (err) {
@@ -55,6 +112,14 @@ const PlaceList = ({ onAddPhoto }) => {
       console.error(err);
     }
   };
+
+  // Group places by location
+  const groupedPlaces = places.reduce((acc, place) => {
+    const loc = place.location || 'Ailleurs';
+    if (!acc[loc]) acc[loc] = [];
+    acc[loc].push(place);
+    return acc;
+  }, {});
 
   return (
     <div className="container" style={{ padding: '100px 20px' }}>
@@ -74,8 +139,8 @@ const PlaceList = ({ onAddPhoto }) => {
             className="glass"
             style={{ padding: '30px', marginBottom: '40px', overflow: 'hidden' }}
           >
-            <form onSubmit={handleAddPlace} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-              <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px' }}>
+            <form onSubmit={handleAddPlace} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <TypeSelector 
                   active={newPlace.type === 'place'} 
                   onClick={() => setNewPlace({...newPlace, type: 'place'})} 
@@ -95,93 +160,176 @@ const PlaceList = ({ onAddPhoto }) => {
                 value={newPlace.name} onChange={e => setNewPlace({...newPlace, name: e.target.value})}
                 required
               />
-              <input 
-                type="text" placeholder="Localisation (ex: Tokyo)" className="glass" 
-                style={{ padding: '12px', color: 'white' }}
-                value={newPlace.location} onChange={e => setNewPlace({...newPlace, location: e.target.value})}
-              />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input 
+                  type="text" placeholder="Ville ou Adresse (ex: Tokyo)" className="glass" 
+                  style={{ padding: '12px', color: 'white', flex: 1 }}
+                  value={newPlace.location} onChange={e => setNewPlace({...newPlace, location: e.target.value})}
+                />
+              </div>
+
+              {user && (
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label style={{ color: 'var(--text-muted)' }}>Visibilité :</label>
+                  <select 
+                    className="glass" 
+                    style={{ padding: '10px', color: 'white', flex: 1 }}
+                    value={newPlace.visibility} 
+                    onChange={e => setNewPlace({...newPlace, visibility: e.target.value})}
+                  >
+                    <option value="public" style={{ color: 'black' }}>Public</option>
+                    <option value="private" style={{ color: 'black' }}>Privé</option>
+                    <option value="group" style={{ color: 'black' }}>Partager avec un groupe</option>
+                  </select>
+
+                  {newPlace.visibility === 'group' && (
+                    <select 
+                      className="glass" 
+                      style={{ padding: '10px', color: 'white', flex: 1 }}
+                      value={newPlace.group_id} 
+                      onChange={e => setNewPlace({...newPlace, group_id: e.target.value})}
+                      required
+                    >
+                      <option value="" style={{ color: 'black' }}>Choisir un groupe...</option>
+                      {userGroups.map(g => (
+                        <option key={g.id} value={g.id} style={{ color: 'black' }}>{g.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <p style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--text-muted)' }}>
+                  Position sur la carte (clique pour placer un point ou cherche ci-dessous) :
+                </p>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                   <input 
+                    type="text" placeholder="Chercher une adresse..." className="glass" 
+                    style={{ padding: '8px 12px', color: 'white', flex: 1, fontSize: '0.9rem' }}
+                    value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleSearchLocation())}
+                  />
+                  <button type="button" className="btn-glass" onClick={handleSearchLocation} disabled={isSearching} style={{ padding: '0 20px' }}>
+                    {isSearching ? '...' : 'Chercher'}
+                  </button>
+                </div>
+                <div style={{ height: '200px', borderRadius: '15px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                  <MapContainer center={[35.6762, 139.6503]} zoom={10} style={{ height: '100%', width: '100%', background: '#111' }}>
+                    <TileLayer 
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; CARTO'
+                    />
+                    <LocationPicker 
+                      onLocationSelect={(pos) => setNewPlace({...newPlace, lat: pos.lat, lng: pos.lng})}
+                      initialPos={newPlace.lat ? { lat: newPlace.lat, lng: newPlace.lng } : null}
+                    />
+                  </MapContainer>
+                </div>
+                {newPlace.lat && (
+                  <p style={{ fontSize: '0.7rem', color: '#00ff7f', marginTop: '5px' }}>
+                    Coordonnées enregistrées : {newPlace.lat.toFixed(4)}, {newPlace.lng.toFixed(4)}
+                  </p>
+                )}
+              </div>
+
               <textarea 
                 placeholder="Description" className="glass" 
-                style={{ padding: '12px', color: 'white', gridColumn: 'span 2' }}
+                style={{ padding: '12px', color: 'white', minHeight: '100px' }}
                 value={newPlace.description} onChange={e => setNewPlace({...newPlace, description: e.target.value})}
               />
-              <button type="submit" className="btn-primary" style={{ gridColumn: 'span 2' }}>Enregistrer</button>
+              <button type="submit" className="btn-primary" style={{ padding: '15px' }}>Enregistrer</button>
             </form>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
-        {places.map((place, index) => (
-          <motion.div 
-            key={place.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="glass place-card"
-            style={{ padding: '25px', position: 'relative' }}
-            onClick={() => setSelectedPlaceDetails(place)}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ 
-                  fontSize: '0.7rem', 
-                  background: place.type === 'activity' ? 'rgba(254, 228, 64, 0.2)' : 'rgba(67, 97, 238, 0.2)',
-                  color: place.type === 'activity' ? 'var(--accent)' : 'var(--secondary)',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  textTransform: 'uppercase',
-                  fontWeight: 800
-                }}>
-                  {place.type === 'activity' ? 'Activité' : 'Lieu'}
-                </span>
-                <span style={{ 
-                  fontSize: '0.8rem', 
-                  background: place.status === 'visited' ? 'rgba(0, 255, 127, 0.2)' : 'rgba(255, 255, 255, 0.1)',
-                  color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)',
-                  padding: '4px 10px',
-                  borderRadius: '20px',
-                  fontWeight: 600
-                }}>
-                  {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
-                </span>
-              </div>
-              <button 
-                onClick={(e) => toggleStatus(e, place.id, place.status)}
-                style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
+      {Object.keys(groupedPlaces).map((location, groupIndex) => (
+        <div key={location} style={{ marginBottom: '60px' }}>
+          <h3 style={{ 
+            fontSize: '1.8rem', 
+            marginBottom: '25px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '15px',
+            color: 'var(--primary)'
+          }}>
+            <MapPin size={28} /> {location}
+            <span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 400 }}>
+              ({groupedPlaces[location].length})
+            </span>
+          </h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
+            {groupedPlaces[location].map((place, index) => (
+              <motion.div 
+                key={place.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="glass place-card"
+                style={{ padding: '25px', position: 'relative' }}
+                onClick={() => setSelectedPlaceDetails(place)}
               >
-                {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
-              </button>
-            </div>
-            
-            <h3 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {place.type === 'activity' ? <Zap size={20} color="var(--accent)" /> : <MapPin size={20} color="var(--secondary)" />}
-              {place.name}
-            </h3>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <Compass size={14} /> {place.location || 'Partout'}
-              </div>
-              {place.photos && place.photos.length > 0 && (
-                <div className="photo-count">
-                  <Camera size={14} /> {place.photos.length}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      background: place.type === 'activity' ? 'rgba(254, 228, 64, 0.2)' : 'rgba(67, 97, 238, 0.2)',
+                      color: place.type === 'activity' ? 'var(--accent)' : 'var(--secondary)',
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      textTransform: 'uppercase',
+                      fontWeight: 800
+                    }}>
+                      {place.type === 'activity' ? 'Activité' : 'Lieu'}
+                    </span>
+                    <span style={{ 
+                      fontSize: '0.8rem', 
+                      background: place.status === 'visited' ? 'rgba(0, 255, 127, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+                      color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)',
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontWeight: 600
+                    }}>
+                      {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={(e) => toggleStatus(e, place.id, place.status)}
+                    style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
+                  >
+                    {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
+                  </button>
                 </div>
-              )}
-            </div>
-            
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: '15px 0 20px' }}>{place.description}</p>
-            
-            <button 
-              className="btn-glass" 
-              style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-              onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
-            >
-              <Camera size={18} /> Ajouter des souvenirs
-            </button>
-          </motion.div>
-        ))}
-      </div>
+                
+                <h3 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {place.type === 'activity' ? <Zap size={20} color="var(--accent)" /> : <MapPin size={20} color="var(--secondary)" />}
+                  {place.name}
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  {place.photos && place.photos.length > 0 && (
+                    <div className="photo-count">
+                      <Camera size={14} /> {place.photos.length} souvenirs
+                    </div>
+                  )}
+                </div>
+                
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: '15px 0 20px' }}>{place.description}</p>
+                
+                <button 
+                  className="btn-glass" 
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                  onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
+                >
+                  <Camera size={18} /> Ajouter des souvenirs
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <AnimatePresence>
         {selectedPlaceDetails && (
@@ -201,15 +349,15 @@ const PlaceList = ({ onAddPhoto }) => {
 
 const PlaceDetailsModal = ({ place, onClose, onAddPhoto }) => {
   const [photos, setPhotos] = useState(place.photos || []);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const handleDeletePhoto = async (id) => {
-    if (window.confirm('Supprimer cette photo ?')) {
-      try {
-        await axios.delete(`/api/photos/${id}`);
-        setPhotos(photos.filter(p => p.id !== id));
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      await axios.delete(`/api/photos/${id}`);
+      setPhotos(photos.filter(p => p.id !== id));
+      setConfirmDeleteId(null);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -272,17 +420,58 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto }) => {
             <div className="details-grid">
               {photos.map(photo => (
                 <div key={photo.id} className="details-photo-container photo-card">
-                  <button className="delete-btn" onClick={() => handleDeletePhoto(photo.id)}>
+                  <button className="delete-btn" onClick={() => setConfirmDeleteId(photo.id)}>
                     <Trash2 size={14} />
                   </button>
-                  <img 
-                    src={photo.url} 
-                    alt={photo.caption} 
-                    className="details-photo"
-                    onClick={() => window.open(photo.url, '_blank')}
-                  />
+                  
+                  <AnimatePresence>
+                    {confirmDeleteId === photo.id && (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                          background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', gap: '10px', zIndex: 20,
+                          borderRadius: '12px'
+                        }}
+                      >
+                        <p style={{ fontWeight: 600, fontSize: '0.8rem', color: 'white' }}>Supprimer ?</p>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button 
+                            className="btn-primary" 
+                            style={{ padding: '4px 10px', fontSize: '0.7rem', background: '#ff4d6d' }}
+                            onClick={() => handleDeletePhoto(photo.id)}
+                          >
+                            Oui
+                          </button>
+                          <button 
+                            className="btn-glass" 
+                            style={{ padding: '4px 10px', fontSize: '0.7rem', color: 'white' }}
+                            onClick={() => setConfirmDeleteId(null)}
+                          >
+                            Non
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  {photo.is_stamp ? (
+                    <div className="stamp-container" style={{ width: '100%', transform: 'scale(0.8)' }}>
+                      <img src={photo.url} alt={photo.caption} className={`stamp-image ${photo.stamp_style || 'classic'}`} />
+                      <div className="postmark" style={{ fontSize: '6px', width: '30px', height: '30px' }}>2026</div>
+                    </div>
+                  ) : (
+                    <img 
+                      src={photo.url} 
+                      alt={photo.caption} 
+                      className="details-photo"
+                      onClick={() => window.open(photo.url, '_blank')}
+                    />
+                  )}
                   {photo.caption && (
-                    <p style={{ fontSize: '0.7rem', marginTop: '5px', color: 'var(--text-muted)' }}>{photo.caption}</p>
+                    <p style={{ fontSize: '0.7rem', marginTop: '5px', color: 'var(--text-muted)', textAlign: 'center' }}>{photo.caption}</p>
                   )}
                 </div>
               ))}

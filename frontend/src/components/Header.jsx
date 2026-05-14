@@ -1,33 +1,28 @@
 import React from 'react';
-import { Camera, MapPin, Home } from 'lucide-react';
+import { Camera, MapPin, Home, Compass, Users, User, LogOut } from 'lucide-react';
 
-const Header = ({ activeTab, setActiveTab }) => {
+const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
   return (
     <header className="glass" style={{
       position: 'fixed',
-      top: '20px',
+      top: '15px',
       left: '50%',
       transform: 'translateX(-50%)',
-      width: '90%',
-      maxWidth: '600px',
+      width: '95%',
+      maxWidth: '500px',
       zIndex: 1000,
-      padding: '10px 20px',
+      padding: '8px 15px',
       display: 'flex',
-      justifyContent: 'center',
-      gap: '30px',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      justifyContent: 'space-around',
+      alignItems: 'center',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+      borderRadius: '20px'
     }}>
-      <NavButton 
-        active={activeTab === 'home'} 
-        onClick={() => setActiveTab('home')}
-        icon={<Home size={20} />}
-        label="Accueil"
-      />
       <NavButton 
         active={activeTab === 'places'} 
         onClick={() => setActiveTab('places')}
         icon={<MapPin size={20} />}
-        label="Endroits"
+        label="Liste"
       />
       <NavButton 
         active={activeTab === 'album'} 
@@ -35,6 +30,37 @@ const Header = ({ activeTab, setActiveTab }) => {
         icon={<Camera size={20} />}
         label="Album"
       />
+      <NavButton 
+        active={activeTab === 'map'} 
+        onClick={() => setActiveTab('map')}
+        icon={<Compass size={20} />}
+        label="Carte"
+      />
+      
+      {/* Auth / Groups */}
+      {user ? (
+        <>
+          <NavButton 
+            active={activeTab === 'groups'} 
+            onClick={() => setActiveTab('groups')}
+            icon={<Users size={20} />}
+            label="Groupes"
+          />
+          <NavButton 
+            active={false} 
+            onClick={onLogout}
+            icon={<LogOut size={20} />}
+            label="Quitter"
+          />
+        </>
+      ) : (
+        <NavButton 
+          active={activeTab === 'auth'} 
+          onClick={() => setActiveTab('auth')}
+          icon={<User size={20} />}
+          label="Connexion"
+        />
+      )}
     </header>
   );
 };
@@ -42,20 +68,23 @@ const Header = ({ activeTab, setActiveTab }) => {
 const NavButton = ({ active, onClick, icon, label }) => (
   <button 
     onClick={onClick}
+    className={active ? 'nav-btn-active' : ''}
     style={{
       background: 'none',
       border: 'none',
       color: active ? 'var(--primary)' : 'var(--text-muted)',
       display: 'flex',
+      flexDirection: 'column',
       alignItems: 'center',
-      gap: '8px',
-      padding: '8px 12px',
+      gap: '4px',
+      padding: '4px 8px',
       transition: 'all 0.3s ease',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      minWidth: '60px'
     }}
   >
     {icon}
-    <span style={{ fontWeight: 600 }}>{label}</span>
+    <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{label}</span>
   </button>
 );
 
