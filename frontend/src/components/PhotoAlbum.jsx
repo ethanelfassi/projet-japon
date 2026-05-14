@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { MapPin, Calendar, Image as ImageIcon, Bookmark } from 'lucide-react';
+import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2 } from 'lucide-react';
 
 const PhotoAlbum = () => {
   const [photos, setPhotos] = useState([]);
@@ -20,9 +20,22 @@ const PhotoAlbum = () => {
     }
   };
 
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
+    if (window.confirm('Es-tu sûr de vouloir supprimer cette photo ?')) {
+      try {
+        await axios.delete(`/api/photos/${id}`);
+        fetchPhotos();
+      } catch (err) {
+        console.error(err);
+        alert('Erreur lors de la suppression');
+      }
+    }
+  };
+
   const filteredPhotos = photos.filter(p => {
-    if (filter === 'photos') return !p.is_stamp;
-    if (filter === 'stamps') return p.is_stamp;
+    if (filter === 'photos') return p.is_stamp === 0;
+    if (filter === 'stamps') return p.is_stamp === 1;
     return true;
   });
 
@@ -56,16 +69,23 @@ const PhotoAlbum = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
-              className={photo.is_stamp ? "" : "glass"}
-              style={{ 
-                marginBottom: '20px', 
-                overflow: photo.is_stamp ? 'visible' : 'hidden', 
-                breakInside: 'avoid',
-                display: 'inline-block',
-                width: '100%',
-                padding: photo.is_stamp ? '0' : '0'
-              }}
-            >
+               style={{ 
+                 marginBottom: '20px', 
+                 overflow: photo.is_stamp ? 'visible' : 'hidden', 
+                 breakInside: 'avoid',
+                 display: 'inline-block',
+                 width: '100%',
+                 padding: photo.is_stamp ? '0' : '0'
+               }}
+               className={photo.is_stamp ? "photo-card" : "glass photo-card"}
+             >
+               <button 
+                 className="delete-btn" 
+                 onClick={(e) => handleDelete(e, photo.id)}
+                 title="Supprimer la photo"
+               >
+                 <Trash2 size={16} />
+               </button>
               {photo.is_stamp ? (
                 <div className="stamp-container" style={{ width: '100%' }}>
                   <img src={photo.url} alt={photo.caption} className="stamp-image" />

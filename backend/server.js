@@ -72,6 +72,34 @@ app.get('/api/photos', (req, res) => {
   res.json(photos);
 });
 
+// Delete a photo
+app.delete('/api/photos/:id', (req, res) => {
+  const { id } = req.params;
+  
+  // 1. Find the photo record to get the URL
+  const photo = db.prepare('SELECT url FROM photos WHERE id = ?').get(id);
+  
+  if (!photo) {
+    return res.status(404).json({ error: 'Photo not found' });
+  }
+
+  // 2. Delete the file from the filesystem
+  const filePath = path.join(__dirname, photo.url);
+  if (fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      // Continue to delete from DB even if file deletion fails (maybe file was already gone)
+    }
+  }
+
+  // 3. Delete from database
+  db.prepare('DELETE FROM photos WHERE id = ?').run(id);
+  
+  res.json({ message: 'Photo deleted successfully' });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT} (Access via network using your IP)`);
 });
