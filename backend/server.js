@@ -37,11 +37,11 @@ app.get('/api/places', (req, res) => {
   res.json(places);
 });
 
-// Add a new place
+// Add a new place/activity
 app.post('/api/places', (req, res) => {
-  const { name, description, location } = req.body;
-  const info = db.prepare('INSERT INTO places (name, description, location) VALUES (?, ?, ?)').run(name, description, location);
-  res.json({ id: info.lastInsertRowid, name, description, location, status: 'planned' });
+  const { name, description, location, type } = req.body;
+  const info = db.prepare('INSERT INTO places (name, description, location, type) VALUES (?, ?, ?, ?)').run(name, description, location, type || 'place');
+  res.json({ id: info.lastInsertRowid, name, description, location, type: type || 'place', status: 'planned' });
 });
 
 // Update place status
@@ -53,10 +53,11 @@ app.patch('/api/places/:id', (req, res) => {
 
 // Upload photo
 app.post('/api/photos', upload.single('photo'), (req, res) => {
-  const { place_id, caption } = req.body;
+  const { place_id, caption, is_stamp } = req.body;
   const url = `/uploads/${req.file.filename}`;
-  const info = db.prepare('INSERT INTO photos (place_id, url, caption) VALUES (?, ?, ?)').run(place_id, url, caption);
-  res.json({ id: info.lastInsertRowid, place_id, url, caption });
+  const isStampInt = is_stamp === 'true' || is_stamp === 1 ? 1 : 0;
+  const info = db.prepare('INSERT INTO photos (place_id, url, caption, is_stamp) VALUES (?, ?, ?, ?)').run(place_id, url, caption, isStampInt);
+  res.json({ id: info.lastInsertRowid, place_id, url, caption, is_stamp: isStampInt });
 });
 
 // Get photos for a place
@@ -71,6 +72,6 @@ app.get('/api/photos', (req, res) => {
   res.json(photos);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://localhost:${PORT} (Access via network using your IP)`);
 });

@@ -6,6 +6,7 @@ import { X, Upload, Check } from 'lucide-react';
 const UploadModal = ({ place, onClose, onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
+  const [isStamp, setIsStamp] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -18,6 +19,7 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
     formData.append('photo', file);
     formData.append('place_id', place.id);
     formData.append('caption', caption);
+    formData.append('is_stamp', isStamp);
 
     try {
       await axios.post('/api/photos', formData, {
@@ -100,6 +102,18 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
               value={caption}
               onChange={e => setCaption(e.target.value)}
             />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '25px', cursor: 'pointer' }} onClick={() => setIsStamp(!isStamp)}>
+              <div style={{ 
+                width: '20px', height: '20px', borderRadius: '4px', 
+                border: '2px solid var(--primary)', 
+                background: isStamp ? 'var(--primary)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                {isStamp && <Check size={14} color="white" />}
+              </div>
+              <span style={{ fontSize: '0.9rem' }}>Transformer en timbre de collection</span>
+            </div>
 
             <button 
               type="submit" 

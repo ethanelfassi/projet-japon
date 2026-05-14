@@ -10,6 +10,7 @@ db.exec(`
     name TEXT NOT NULL,
     description TEXT,
     location TEXT,
+    type TEXT DEFAULT 'place', -- 'place' or 'activity'
     status TEXT DEFAULT 'planned', -- 'planned' or 'visited'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
@@ -19,6 +20,7 @@ db.exec(`
     place_id INTEGER,
     url TEXT NOT NULL,
     caption TEXT,
+    is_stamp INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (place_id) REFERENCES places(id)
   );
