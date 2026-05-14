@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    container_name: projet-japon-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/japan_trip.db:/app/japan_trip.db
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: projet-japon-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: always
