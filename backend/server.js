@@ -36,6 +36,16 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+let initPromise = null;
+const ensureDb = () => {
+  if (!initPromise) initPromise = initDb();
+  return initPromise;
+};
+
+app.use((req, res, next) => {
+  ensureDb().then(next).catch(() => res.status(500).json({ error: 'DB init failed' }));
+});
+
 app.use(authenticateToken);
 
 const storage = new CloudinaryStorage({
@@ -195,9 +205,10 @@ app.delete('/api/photos/:id', async (req, res) => {
   res.json({ message: 'Photo deleted successfully' });
 });
 
-initDb().then(() => {
-  app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== 'production') {
+  initDb().then(() => {
+    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+  });
+}
+
+module.exports = app;
