@@ -52,6 +52,7 @@ db.exec(`
     caption TEXT,
     is_stamp INTEGER DEFAULT 0,
     stamp_style TEXT DEFAULT 'classic',
+    cloudinary_id TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (place_id) REFERENCES places(id)
   );
