@@ -70,8 +70,9 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const { rows: existing } = await pool.query('SELECT COUNT(*) as count FROM users');
-    const role = parseInt(existing[0].count) === 0 ? 'admin' : 'visiteur';
+    const adminNames = ['ethan', 'laurine', 'lwi', 'ruben', 'ameline'];
+    const isAdmin = adminNames.some(n => username.toLowerCase().includes(n));
+    const role = isAdmin ? 'admin' : 'visiteur';
     const { rows } = await pool.query(
       'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role',
       [username, hashedPassword, role]
