@@ -14,7 +14,6 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "better-sqlite3": "^12.10.0",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -22,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.1.1",
     "multer-storage-cloudinary": "^4.0.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "pg": "^8.21.0"
   }
 }
