@@ -1,8 +1,21 @@
 const { Pool } = require('pg');
+const fs = require('fs');
+
+const isDocker = fs.existsSync('/.dockerenv');
+let dbUrl = process.env.DATABASE_URL;
+
+if (isDocker && dbUrl) {
+  dbUrl = dbUrl
+    .replace('://localhost', '://host.docker.internal')
+    .replace('://127.0.0.1', '://host.docker.internal');
+}
+
+// Only use SSL for external databases (like Neon) and not local ones
+const useSSL = dbUrl && !dbUrl.includes('@db') && !dbUrl.includes('localhost') && !dbUrl.includes('127.0.0.1') && !dbUrl.includes('host.docker.internal');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  connectionString: dbUrl,
+  ssl: useSSL ? { rejectUnauthorized: false } : false,
 });
 
 const initDb = async () => {
