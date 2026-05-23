@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, MapPin, Home, Compass, Users, User, LogOut } from 'lucide-react';
+import { Camera, MapPin, Home, Compass, Users, User, LogOut, Shield } from 'lucide-react';
 
 const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
   return (
@@ -40,14 +40,22 @@ const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
       {/* Auth / Groups */}
       {user ? (
         <>
-          <NavButton 
-            active={activeTab === 'groups'} 
+          <NavButton
+            active={activeTab === 'groups'}
             onClick={() => setActiveTab('groups')}
             icon={<Users size={20} />}
             label="Groupes"
           />
-          <NavButton 
-            active={false} 
+          {user.role === 'admin' && (
+            <NavButton
+              active={activeTab === 'admin'}
+              onClick={() => setActiveTab('admin')}
+              icon={<Shield size={20} />}
+              label="Admin"
+            />
+          )}
+          <NavButton
+            active={false}
             onClick={onLogout}
             icon={<LogOut size={20} />}
             label="Quitter"

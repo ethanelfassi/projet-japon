@@ -125,9 +125,11 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
     <div className="container" style={{ padding: '100px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <h2>Bucket List <span style={{ color: 'var(--primary)' }}>Japon</span></h2>
-        <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}>
-          <Plus size={20} /> Ajouter
-        </button>
+        {(user?.role === 'editeur' || user?.role === 'admin') && (
+          <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}>
+            <Plus size={20} /> Ajouter
+          </button>
+        )}
       </div>
 
       <AnimatePresence>
@@ -295,12 +297,14 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                       {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
                     </span>
                   </div>
-                  <button 
-                    onClick={(e) => toggleStatus(e, place.id, place.status)}
-                    style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
-                  </button>
+                  {(user?.role === 'editeur' || user?.role === 'admin') && (
+                    <button
+                      onClick={(e) => toggleStatus(e, place.id, place.status)}
+                      style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
+                    >
+                      {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
+                    </button>
+                  )}
                 </div>
                 
                 <h3 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -318,13 +322,15 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                 
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: '15px 0 20px' }}>{place.description}</p>
                 
-                <button 
-                  className="btn-glass" 
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                  onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
-                >
-                  <Camera size={18} /> Ajouter des souvenirs
-                </button>
+                {(user?.role === 'editeur' || user?.role === 'admin') && (
+                  <button
+                    className="btn-glass"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
+                  >
+                    <Camera size={18} /> Ajouter des souvenirs
+                  </button>
+                )}
               </motion.div>
             ))}
           </div>
@@ -333,9 +339,10 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
 
       <AnimatePresence>
         {selectedPlaceDetails && (
-          <PlaceDetailsModal 
-            place={selectedPlaceDetails} 
-            onClose={() => setSelectedPlaceDetails(null)} 
+          <PlaceDetailsModal
+            place={selectedPlaceDetails}
+            onClose={() => setSelectedPlaceDetails(null)}
+            user={user}
             onAddPhoto={(p) => {
               setSelectedPlaceDetails(null);
               onAddPhoto(p);
@@ -347,7 +354,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
   );
 };
 
-const PlaceDetailsModal = ({ place, onClose, onAddPhoto }) => {
+const PlaceDetailsModal = ({ place, onClose, onAddPhoto, user }) => {
   const [photos, setPhotos] = useState(place.photos || []);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
@@ -407,9 +414,11 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto }) => {
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Camera size={20} /> Souvenirs ({photos.length})
             </h3>
-            <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Plus size={16} /> Ajouter
-            </button>
+            {(user?.role === 'editeur' || user?.role === 'admin') && (
+              <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Plus size={16} /> Ajouter
+              </button>
+            )}
           </div>
           
           {photos.length === 0 ? (
@@ -420,9 +429,11 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto }) => {
             <div className="details-grid">
               {photos.map(photo => (
                 <div key={photo.id} className="details-photo-container photo-card">
-                  <button className="delete-btn" onClick={() => setConfirmDeleteId(photo.id)}>
-                    <Trash2 size={14} />
-                  </button>
+                  {(user?.role === 'editeur' || user?.role === 'admin') && (
+                    <button className="delete-btn" onClick={() => setConfirmDeleteId(photo.id)}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                   
                   <AnimatePresence>
                     {confirmDeleteId === photo.id && (
