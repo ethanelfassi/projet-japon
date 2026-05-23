@@ -3,7 +3,9 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
-import { MapPin, Zap } from 'lucide-react';
+import { MapPin, Zap, Compass } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import PlaceDetailsModal from './PlaceDetailsModal';
 
 // Fix for default marker icons in Leaflet with Webpack/Vite
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -17,9 +19,10 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const MapView = ({ onPlaceClick }) => {
+const MapView = ({ onPlaceClick, onAddPhoto }) => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlace, setSelectedPlace] = useState(null);
   useEffect(() => {
     fetchPlaces();
   }, []);
@@ -46,7 +49,7 @@ const MapView = ({ onPlaceClick }) => {
         <p style={{ color: 'var(--text-muted)' }}>Visualisez tous vos projets et souvenirs sur la carte du Japon.</p>
       </div>
 
-      <div className="glass" style={{ height: '70vh', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+      <div className="glass" style={{ height: '70vh', borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--glass-border)', position: 'relative' }}>
         {loading ? (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
             Chargement de la carte...
@@ -60,20 +63,31 @@ const MapView = ({ onPlaceClick }) => {
             {places.map(place => (
               <Marker key={place.id} position={[place.lat, place.lng]}>
                 <Popup>
-                  <div style={{ padding: '5px' }}>
-                    <h4 
-                      style={{ margin: '0 0 5px 0', color: '#4361ee', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', textDecoration: 'underline' }}
-                      onClick={() => onPlaceClick(place)}
-                      title="Voir les détails dans la liste"
-                    >
-                      {place.type === 'activity' ? <Zap size={14} color="#fcc419" /> : <MapPin size={14} color="#4361ee" />}
-                      {place.name}
-                    </h4>
-                    <p style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#666' }}>{place.location}</p>
-                    <p style={{ margin: '0', fontSize: '0.85rem' }}>{place.description}</p>
-                    <div style={{ marginTop: '10px', fontSize: '0.75rem', fontWeight: 700, color: place.status === 'visited' ? '#00ff7f' : '#ff4d6d' }}>
-                      {place.status === 'visited' ? '✓ Complété' : '○ À faire'}
+                  <div className="map-popup-card">
+                    <div className="map-popup-header">
+                      <span className={`map-popup-badge ${place.type}`}>
+                        {place.type === 'activity' ? <Zap size={10} style={{ color: 'var(--accent)' }} /> : <MapPin size={10} style={{ color: 'var(--secondary)' }} />}
+                        {place.type === 'activity' ? 'Activité' : 'Lieu'}
+                      </span>
+                      <span className={`map-popup-status ${place.status}`}>
+                        {place.status === 'visited' ? 'Visité' : 'À faire'}
+                      </span>
                     </div>
+                    <h4 className="map-popup-title">{place.name}</h4>
+                    {place.location && (
+                      <p className="map-popup-location">
+                        <MapPin size={12} /> {place.location}
+                      </p>
+                    )}
+                    {place.description && (
+                      <p className="map-popup-description">{place.description}</p>
+                    )}
+                    <button 
+                      className="map-popup-btn" 
+                      onClick={() => setSelectedPlace(place)}
+                    >
+                      <Compass size={14} /> Voir les souvenirs
+                    </button>
                   </div>
                 </Popup>
               </Marker>
@@ -81,6 +95,20 @@ const MapView = ({ onPlaceClick }) => {
           </MapContainer>
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedPlace && (
+          <PlaceDetailsModal 
+            place={selectedPlace} 
+            onClose={() => setSelectedPlace(null)} 
+            onAddPhoto={(p) => {
+              setSelectedPlace(null);
+              if (onAddPhoto) onAddPhoto(p);
+            }}
+            onPhotoDeleted={fetchPlaces}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
