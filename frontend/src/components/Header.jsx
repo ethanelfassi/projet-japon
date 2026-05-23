@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, MapPin, Home, Compass, Users, User, LogOut, Shield } from 'lucide-react';
+import { Camera, MapPin, Home, Compass, Users, User, LogOut, Shield, CalendarDays } from 'lucide-react';
 
 const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
   return (
@@ -30,11 +30,17 @@ const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
         icon={<Camera size={20} />}
         label="Album"
       />
-      <NavButton 
-        active={activeTab === 'map'} 
+      <NavButton
+        active={activeTab === 'map'}
         onClick={() => setActiveTab('map')}
         icon={<Compass size={20} />}
         label="Carte"
+      />
+      <NavButton
+        active={activeTab === 'schedule'}
+        onClick={() => setActiveTab('schedule')}
+        icon={<CalendarDays size={20} />}
+        label="Planning"
       />
       
       {/* Auth / Groups */}

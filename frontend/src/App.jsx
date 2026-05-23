@@ -9,6 +9,7 @@ import MapView from './components/MapView';
 import Auth from './components/Auth';
 import GroupsManager from './components/GroupsManager';
 import AdminPanel from './components/AdminPanel';
+import Schedule from './components/Schedule';
 import './App.css';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
@@ -80,6 +81,8 @@ function App() {
         return <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('places')} />;
       case 'groups':
         return user ? <GroupsManager user={user} /> : <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('groups')} />;
+      case 'schedule':
+        return <Schedule user={user} />;
       case 'admin':
         return user?.role === 'admin' ? <AdminPanel currentUser={user} /> : <Hero />;
       default:

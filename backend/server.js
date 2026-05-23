@@ -219,6 +219,31 @@ app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) 
   res.json({ message: 'Photo deleted successfully' });
 });
 
+// --- Itinerary ---
+app.get('/api/itinerary', async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT i.*, p.name as place_name, p.location as place_location
+    FROM itinerary i
+    LEFT JOIN places p ON i.place_id = p.id
+    ORDER BY i.date ASC, i.time_start ASC
+  `);
+  res.json(rows);
+});
+
+app.post('/api/itinerary', requireRole('editeur', 'admin'), async (req, res) => {
+  const { date, title, description, time_start, time_end, place_id } = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO itinerary (date, title, description, time_start, time_end, place_id, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+    [date, title, description, time_start || null, time_end || null, place_id || null, req.user.id]
+  );
+  res.json(rows[0]);
+});
+
+app.delete('/api/itinerary/:id', requireRole('editeur', 'admin'), async (req, res) => {
+  await pool.query('DELETE FROM itinerary WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Deleted' });
+});
+
 // --- Admin ---
 app.get('/api/admin/users', requireRole('admin'), async (req, res) => {
   const { rows } = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id');
