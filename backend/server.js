@@ -21,18 +21,29 @@ cloudinary.config({
 app.use(cors());
 app.use(express.json());
 
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) { req.user = null; return next(); }
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    req.user = err ? null : user;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { rows } = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [decoded.id]);
+    req.user = rows[0] || null;
     next();
-  });
+  } catch {
+    req.user = null;
+    next();
+  }
 };
 
 const requireAuth = (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+};
+
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
   next();
 };
 
@@ -59,12 +70,15 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
+    const adminNames = ['ethan', 'laurine', 'lwi', 'ruben', 'ameline'];
+    const isAdmin = adminNames.some(n => username.toLowerCase().includes(n));
+    const role = isAdmin ? 'admin' : 'visiteur';
     const { rows } = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
-      [username, hashedPassword]
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role',
+      [username, hashedPassword, role]
     );
     const token = jwt.sign({ id: rows[0].id, username: rows[0].username }, JWT_SECRET);
-    res.json({ token, user: { id: rows[0].id, username: rows[0].username } });
+    res.json({ token, user: { id: rows[0].id, username: rows[0].username, role: rows[0].role } });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ error: 'Username already taken' });
     res.status(500).json({ error: err.message });
@@ -79,7 +93,7 @@ app.post('/api/auth/login', async (req, res) => {
     const valid = await bcrypt.compare(password, rows[0].password_hash);
     if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
     const token = jwt.sign({ id: rows[0].id, username: rows[0].username }, JWT_SECRET);
-    res.json({ token, user: { id: rows[0].id, username: rows[0].username } });
+    res.json({ token, user: { id: rows[0].id, username: rows[0].username, role: rows[0].role } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -95,7 +109,7 @@ app.get('/api/users', requireAuth, async (req, res) => {
 });
 
 // --- Groups ---
-app.post('/api/groups', requireAuth, async (req, res) => {
+app.post('/api/groups', requireRole('editeur', 'admin'), async (req, res) => {
   try {
     const { name, members } = req.body;
     const { rows } = await pool.query(
@@ -144,7 +158,7 @@ app.get('/api/places', async (req, res) => {
   res.json(result.rows);
 });
 
-app.post('/api/places', async (req, res) => {
+app.post('/api/places', requireRole('editeur', 'admin'), async (req, res) => {
   const { name, description, location, type, lat, lng, visibility, group_id } = req.body;
   const finalVisibility = req.user ? (visibility || 'public') : 'public';
   const createdBy = req.user ? req.user.id : null;
@@ -156,14 +170,14 @@ app.post('/api/places', async (req, res) => {
   res.json({ id: rows[0].id, name, description, location, type: type || 'place', lat, lng, status: 'planned', visibility: finalVisibility, created_by: createdBy, group_id: finalGroupId });
 });
 
-app.patch('/api/places/:id', async (req, res) => {
+app.patch('/api/places/:id', requireRole('editeur', 'admin'), async (req, res) => {
   const { status } = req.body;
   await pool.query('UPDATE places SET status = $1 WHERE id = $2', [status, req.params.id]);
   res.json({ message: 'Status updated' });
 });
 
 // --- Photos ---
-app.post('/api/photos', upload.single('photo'), async (req, res) => {
+app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   const { place_id, caption, is_stamp, stamp_style } = req.body;
   const url = req.file.path;
@@ -195,7 +209,7 @@ app.get('/api/photos', async (req, res) => {
   res.json(rows);
 });
 
-app.delete('/api/photos/:id', async (req, res) => {
+app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) => {
   const { rows } = await pool.query('SELECT cloudinary_id FROM photos WHERE id = $1', [req.params.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Photo not found' });
   if (rows[0].cloudinary_id) {
@@ -203,6 +217,19 @@ app.delete('/api/photos/:id', async (req, res) => {
   }
   await pool.query('DELETE FROM photos WHERE id = $1', [req.params.id]);
   res.json({ message: 'Photo deleted successfully' });
+});
+
+// --- Admin ---
+app.get('/api/admin/users', requireRole('admin'), async (req, res) => {
+  const { rows } = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id');
+  res.json(rows);
+});
+
+app.patch('/api/admin/users/:id/role', requireRole('admin'), async (req, res) => {
+  const { role } = req.body;
+  if (!['visiteur', 'editeur', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
+  res.json({ message: 'Role updated' });
 });
 
 if (process.env.NODE_ENV !== 'production') {

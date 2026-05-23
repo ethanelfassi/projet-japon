@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2 } from 'lucide-react';
 
-const PhotoAlbum = () => {
+const PhotoAlbum = ({ user }) => {
   const [photos, setPhotos] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'photos', 'stamps'
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -78,13 +78,15 @@ const PhotoAlbum = () => {
                }}
                className={photo.is_stamp ? "photo-card" : "glass photo-card"}
              >
-               <button 
-                 className="delete-btn" 
-                 onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(photo.id); }}
-                 title="Supprimer la photo"
-               >
-                 <Trash2 size={16} />
-               </button>
+               {(user?.role === 'editeur' || user?.role === 'admin') && (
+                 <button
+                   className="delete-btn"
+                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(photo.id); }}
+                   title="Supprimer la photo"
+                 >
+                   <Trash2 size={16} />
+                 </button>
+               )}
 
                <AnimatePresence>
                  {confirmDeleteId === photo.id && (

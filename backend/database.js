@@ -67,6 +67,13 @@ const initDb = async () => {
     );
   `);
 
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);
+  await pool.query(`
+    UPDATE users SET role = 'admin'
+    WHERE id = (SELECT MIN(id) FROM users)
+    AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')
+  `);
+
   const { rows } = await pool.query('SELECT COUNT(*) as count FROM places');
   if (parseInt(rows[0].count) === 0) {
     await pool.query(`

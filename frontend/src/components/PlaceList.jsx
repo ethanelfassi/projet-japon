@@ -24,7 +24,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
   const [places, setPlaces] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
-  const [newPlace, setNewPlace] = useState({ 
+  const [newPlace, setNewPlace] = useState({
     name: '', description: '', location: '', type: 'place', lat: null, lng: null, visibility: 'public', group_id: ''
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,7 +80,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
         return { ...place, photos: photosRes.data };
       }));
       setPlaces(placesWithPhotos);
-      
+
       // Update selected place details if it's open to refresh photo list
       if (selectedPlaceDetails) {
         const updated = placesWithPhotos.find(p => p.id === selectedPlaceDetails.id);
@@ -126,14 +126,16 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
     <div className="container" style={{ padding: '100px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <h2>Bucket List <span style={{ color: 'var(--primary)' }}>Japon</span></h2>
-        <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}>
-          <Plus size={20} /> Ajouter
-        </button>
+        {(user?.role === 'editeur' || user?.role === 'admin') && (
+          <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}>
+            <Plus size={20} /> Ajouter
+          </button>
+        )}
       </div>
 
       <AnimatePresence>
         {showAdd && (
-          <motion.div 
+          <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -142,41 +144,41 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
           >
             <form onSubmit={handleAddPlace} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <TypeSelector 
-                  active={newPlace.type === 'place'} 
-                  onClick={() => setNewPlace({...newPlace, type: 'place'})} 
-                  icon={<MapPin size={16} />} 
-                  label="Lieu" 
+                <TypeSelector
+                  active={newPlace.type === 'place'}
+                  onClick={() => setNewPlace({ ...newPlace, type: 'place' })}
+                  icon={<MapPin size={16} />}
+                  label="Lieu"
                 />
-                <TypeSelector 
-                  active={newPlace.type === 'activity'} 
-                  onClick={() => setNewPlace({...newPlace, type: 'activity'})} 
-                  icon={<Zap size={16} />} 
-                  label="Activité" 
+                <TypeSelector
+                  active={newPlace.type === 'activity'}
+                  onClick={() => setNewPlace({ ...newPlace, type: 'activity' })}
+                  icon={<Zap size={16} />}
+                  label="Activité"
                 />
               </div>
-              <input 
-                type="text" placeholder="Nom (ex: Akihabara ou Faire du Kart)" className="glass" 
+              <input
+                type="text" placeholder="Nom (ex: Akihabara ou Faire du Kart)" className="glass"
                 style={{ padding: '12px', color: 'white' }}
-                value={newPlace.name} onChange={e => setNewPlace({...newPlace, name: e.target.value})}
+                value={newPlace.name} onChange={e => setNewPlace({ ...newPlace, name: e.target.value })}
                 required
               />
               <div style={{ display: 'flex', gap: '10px' }}>
-                <input 
-                  type="text" placeholder="Ville ou Adresse (ex: Tokyo)" className="glass" 
+                <input
+                  type="text" placeholder="Ville ou Adresse (ex: Tokyo)" className="glass"
                   style={{ padding: '12px', color: 'white', flex: 1 }}
-                  value={newPlace.location} onChange={e => setNewPlace({...newPlace, location: e.target.value})}
+                  value={newPlace.location} onChange={e => setNewPlace({ ...newPlace, location: e.target.value })}
                 />
               </div>
 
               {user && (
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <label style={{ color: 'var(--text-muted)' }}>Visibilité :</label>
-                  <select 
-                    className="glass" 
+                  <select
+                    className="glass"
                     style={{ padding: '10px', color: 'white', flex: 1 }}
-                    value={newPlace.visibility} 
-                    onChange={e => setNewPlace({...newPlace, visibility: e.target.value})}
+                    value={newPlace.visibility}
+                    onChange={e => setNewPlace({ ...newPlace, visibility: e.target.value })}
                   >
                     <option value="public" style={{ color: 'black' }}>Public</option>
                     <option value="private" style={{ color: 'black' }}>Privé</option>
@@ -184,11 +186,11 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                   </select>
 
                   {newPlace.visibility === 'group' && (
-                    <select 
-                      className="glass" 
+                    <select
+                      className="glass"
                       style={{ padding: '10px', color: 'white', flex: 1 }}
-                      value={newPlace.group_id} 
-                      onChange={e => setNewPlace({...newPlace, group_id: e.target.value})}
+                      value={newPlace.group_id}
+                      onChange={e => setNewPlace({ ...newPlace, group_id: e.target.value })}
                       required
                     >
                       <option value="" style={{ color: 'black' }}>Choisir un groupe...</option>
@@ -205,8 +207,8 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                   Position sur la carte (clique pour placer un point ou cherche ci-dessous) :
                 </p>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                   <input 
-                    type="text" placeholder="Chercher une adresse..." className="glass" 
+                  <input
+                    type="text" placeholder="Chercher une adresse..." className="glass"
                     style={{ padding: '8px 12px', color: 'white', flex: 1, fontSize: '0.9rem' }}
                     value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                     onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleSearchLocation())}
@@ -217,12 +219,12 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                 </div>
                 <div style={{ height: '200px', borderRadius: '15px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
                   <MapContainer center={[35.6762, 139.6503]} zoom={10} style={{ height: '100%', width: '100%', background: '#111' }}>
-                    <TileLayer 
+                    <TileLayer
                       url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                       attribution='&copy; CARTO'
                     />
-                    <LocationPicker 
-                      onLocationSelect={(pos) => setNewPlace({...newPlace, lat: pos.lat, lng: pos.lng})}
+                    <LocationPicker
+                      onLocationSelect={(pos) => setNewPlace({ ...newPlace, lat: pos.lat, lng: pos.lng })}
                       initialPos={newPlace.lat ? { lat: newPlace.lat, lng: newPlace.lng } : null}
                     />
                   </MapContainer>
@@ -234,10 +236,10 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                 )}
               </div>
 
-              <textarea 
-                placeholder="Description" className="glass" 
+              <textarea
+                placeholder="Description" className="glass"
                 style={{ padding: '12px', color: 'white', minHeight: '100px' }}
-                value={newPlace.description} onChange={e => setNewPlace({...newPlace, description: e.target.value})}
+                value={newPlace.description} onChange={e => setNewPlace({ ...newPlace, description: e.target.value })}
               />
               <button type="submit" className="btn-primary" style={{ padding: '15px' }}>Enregistrer</button>
             </form>
@@ -247,11 +249,11 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
 
       {Object.keys(groupedPlaces).map((location, groupIndex) => (
         <div key={location} style={{ marginBottom: '60px' }}>
-          <h3 style={{ 
-            fontSize: '1.8rem', 
-            marginBottom: '25px', 
-            display: 'flex', 
-            alignItems: 'center', 
+          <h3 style={{
+            fontSize: '1.8rem',
+            marginBottom: '25px',
+            display: 'flex',
+            alignItems: 'center',
             gap: '15px',
             color: 'var(--primary)'
           }}>
@@ -260,10 +262,10 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
               ({groupedPlaces[location].length})
             </span>
           </h3>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
             {groupedPlaces[location].map((place, index) => (
-              <motion.div 
+              <motion.div
                 key={place.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -274,8 +276,8 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ 
-                      fontSize: '0.7rem', 
+                    <span style={{
+                      fontSize: '0.7rem',
                       background: place.type === 'activity' ? 'rgba(254, 228, 64, 0.2)' : 'rgba(67, 97, 238, 0.2)',
                       color: place.type === 'activity' ? 'var(--accent)' : 'var(--secondary)',
                       padding: '2px 8px',
@@ -285,8 +287,8 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     }}>
                       {place.type === 'activity' ? 'Activité' : 'Lieu'}
                     </span>
-                    <span style={{ 
-                      fontSize: '0.8rem', 
+                    <span style={{
+                      fontSize: '0.8rem',
                       background: place.status === 'visited' ? 'rgba(0, 255, 127, 0.2)' : 'rgba(255, 255, 255, 0.1)',
                       color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)',
                       padding: '4px 10px',
@@ -296,19 +298,21 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                       {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
                     </span>
                   </div>
-                  <button 
-                    onClick={(e) => toggleStatus(e, place.id, place.status)}
-                    style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
-                  >
-                    {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
-                  </button>
+                  {(user?.role === 'editeur' || user?.role === 'admin') && (
+                    <button
+                      onClick={(e) => toggleStatus(e, place.id, place.status)}
+                      style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
+                    >
+                      {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
+                    </button>
+                  )}
                 </div>
-                
+
                 <h3 style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {place.type === 'activity' ? <Zap size={20} color="var(--accent)" /> : <MapPin size={20} color="var(--secondary)" />}
                   {place.name}
                 </h3>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   {place.photos && place.photos.length > 0 && (
                     <div className="photo-count">
@@ -316,16 +320,18 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     </div>
                   )}
                 </div>
-                
+
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: '15px 0 20px' }}>{place.description}</p>
-                
-                <button 
-                  className="btn-glass" 
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                  onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
-                >
-                  <Camera size={18} /> Ajouter des souvenirs
-                </button>
+
+                {(user?.role === 'editeur' || user?.role === 'admin') && (
+                  <button
+                    className="btn-glass"
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    onClick={(e) => { e.stopPropagation(); onAddPhoto(place); }}
+                  >
+                    <Camera size={18} /> Ajouter des souvenirs
+                  </button>
+                )}
               </motion.div>
             ))}
           </div>
@@ -334,9 +340,10 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
 
       <AnimatePresence>
         {selectedPlaceDetails && (
-          <PlaceDetailsModal 
-            place={selectedPlaceDetails} 
-            onClose={() => setSelectedPlaceDetails(null)} 
+          <PlaceDetailsModal
+            place={selectedPlaceDetails}
+            onClose={() => setSelectedPlaceDetails(null)}
+            user={user}
             onAddPhoto={(p) => {
               setSelectedPlaceDetails(null);
               onAddPhoto(p);
@@ -350,9 +357,8 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
 };
 
 
-
 const TypeSelector = ({ active, onClick, icon, label }) => (
-  <div 
+  <div
     onClick={onClick}
     style={{
       padding: '8px 15px',
