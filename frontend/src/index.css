@@ -256,3 +256,139 @@ button {
   border: 1px dashed var(--glass-border);
   border-radius: 12px;
 }
+
+/* Custom Leaflet Popup overrides for premium dark theme */
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 14, 18, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  color: var(--text-main) !important;
+  border-radius: 16px !important;
+  font-family: var(--font-family) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 14, 18, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--text-muted) !important;
+  padding: 8px 12px 0 0 !important;
+  font-size: 16px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--primary) !important;
+  background: transparent !important;
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+  line-height: 1.5 !important;
+}
+
+/* Map popup card inner layout */
+.map-popup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 240px;
+}
+
+.map-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.map-popup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.map-popup-badge.activity {
+  background: rgba(254, 228, 64, 0.15);
+  color: var(--accent);
+}
+
+.map-popup-badge.place {
+  background: rgba(67, 97, 238, 0.15);
+  color: var(--secondary);
+}
+
+.map-popup-status {
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+.map-popup-status.visited {
+  background: rgba(0, 255, 127, 0.15);
+  color: #00ff7f;
+}
+
+.map-popup-status.planned {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.map-popup-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 4px 0 0 0;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.map-popup-location {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-popup-description {
+  font-size: 0.85rem;
+  color: #e0e0e0;
+  margin: 4px 0 8px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.map-popup-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--primary);
+  color: white;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.map-popup-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+}

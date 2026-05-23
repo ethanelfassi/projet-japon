@@ -72,7 +72,10 @@ function App() {
       case 'album':
         return <PhotoAlbum user={user} />;
       case 'map':
-        return <MapView onPlaceClick={handlePlaceClickFromMap} />;
+        return <MapView 
+          onPlaceClick={handlePlaceClickFromMap} 
+          onAddPhoto={setUploadPlace} 
+        />;
       case 'auth':
         return <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('places')} />;
       case 'groups':

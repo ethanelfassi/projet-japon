@@ -1,4 +1,17 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: projet-japon-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=projet_japon
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
   backend:
     build: ./backend
     container_name: projet-japon-backend
@@ -7,6 +20,15 @@ services:
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/japan_trip.db:/app/japan_trip.db
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/projet_japon
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGDATABASE=projet_japon
+    depends_on:
+      - db
     restart: always
 
   frontend:
@@ -17,3 +39,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  pgdata:
