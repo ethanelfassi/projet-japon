@@ -5,8 +5,16 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { v2: cloudinary } = require('cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const db = require('./database');
 require('dotenv').config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,21 +49,11 @@ const requireAuth = (req, res, next) => {
 };
 
 app.use(authenticateToken);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Ensure uploads directory exists
-if (!fs.existsSync('./uploads')) {
-  fs.mkdirSync('./uploads');
-}
-
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+// Multer + Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: { folder: 'projet-japon', allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
 });
 const upload = multer({ storage });
 
@@ -199,12 +197,13 @@ app.post('/api/photos', upload.single('photo'), (req, res) => {
   }
 
   const { place_id, caption, is_stamp, stamp_style } = req.body;
-  const url = `/uploads/${req.file.filename}`;
+  const url = req.file.path;
+  const publicId = req.file.filename;
   const isStampInt = is_stamp === 'true' || is_stamp === 1 ? 1 : 0;
   const style = stamp_style || 'classic';
-  
+
   try {
-    const info = db.prepare('INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style) VALUES (?, ?, ?, ?, ?)').run(place_id, url, caption, isStampInt, style);
+    const info = db.prepare('INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id) VALUES (?, ?, ?, ?, ?, ?)').run(place_id, url, caption, isStampInt, style, publicId);
     console.log('Photo saved to DB, ID:', info.lastInsertRowid);
     res.json({ id: info.lastInsertRowid, place_id, url, caption, is_stamp: isStampInt, stamp_style: style });
   } catch (err) {
@@ -229,27 +228,21 @@ app.get('/api/photos', (req, res) => {
 app.delete('/api/photos/:id', (req, res) => {
   const { id } = req.params;
   
-  // 1. Find the photo record to get the URL
-  const photo = db.prepare('SELECT url FROM photos WHERE id = ?').get(id);
-  
+  const photo = db.prepare('SELECT cloudinary_id FROM photos WHERE id = ?').get(id);
+
   if (!photo) {
     return res.status(404).json({ error: 'Photo not found' });
   }
 
-  // 2. Delete the file from the filesystem
-  const filePath = path.join(__dirname, photo.url);
-  if (fs.existsSync(filePath)) {
+  if (photo.cloudinary_id) {
     try {
-      fs.unlinkSync(filePath);
+      await cloudinary.uploader.destroy(photo.cloudinary_id);
     } catch (err) {
-      console.error('Error deleting file:', err);
-      // Continue to delete from DB even if file deletion fails (maybe file was already gone)
+      console.error('Cloudinary delete error:', err);
     }
   }
 
-  // 3. Delete from database
   db.prepare('DELETE FROM photos WHERE id = ?').run(id);
-  
   res.json({ message: 'Photo deleted successfully' });
 });
 
