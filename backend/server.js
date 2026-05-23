@@ -225,7 +225,7 @@ app.get('/api/photos', (req, res) => {
 });
 
 // Delete a photo
-app.delete('/api/photos/:id', (req, res) => {
+app.delete('/api/photos/:id', async (req, res) => {
   const { id } = req.params;
   
   const photo = db.prepare('SELECT cloudinary_id FROM photos WHERE id = ?').get(id);
