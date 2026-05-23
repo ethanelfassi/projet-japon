@@ -10,6 +10,8 @@ import Auth from './components/Auth';
 import GroupsManager from './components/GroupsManager';
 import './App.css';
 
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
+
 // Set up axios interceptor for auth
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
