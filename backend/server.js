@@ -220,7 +220,7 @@ app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) 
 });
 
 // --- Photo Comments ---
-app.get('/api/photos/comments', async (req, res) => {
+app.get('/api/photo-comments', async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT pc.*, u.username
@@ -234,16 +234,17 @@ app.get('/api/photos/comments', async (req, res) => {
   }
 });
 
-app.post('/api/photos/:photo_id/comments', requireAuth, async (req, res) => {
+app.post('/api/photo-comments/:photo_id', requireAuth, async (req, res) => {
   const { text } = req.body;
   const { photo_id } = req.params;
   if (!text || text.trim() === '') {
     return res.status(400).json({ error: 'Comment text is required' });
   }
   try {
+    const parsedPhotoId = parseInt(photo_id, 10);
     const { rows } = await pool.query(
       'INSERT INTO photo_comments (photo_id, user_id, text) VALUES ($1, $2, $3) RETURNING id, photo_id, user_id, text, created_at',
-      [photo_id, req.user.id, text]
+      [parsedPhotoId, req.user.id, text]
     );
     res.json({
       ...rows[0],
@@ -254,7 +255,7 @@ app.post('/api/photos/:photo_id/comments', requireAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/photos/comments/:id', requireAuth, async (req, res) => {
+app.delete('/api/photo-comments/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { rows } = await pool.query('SELECT user_id FROM photo_comments WHERE id = $1', [id]);

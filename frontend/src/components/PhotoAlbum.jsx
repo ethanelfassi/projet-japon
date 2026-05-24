@@ -27,7 +27,7 @@ const PhotoAlbum = ({ user }) => {
 
   const fetchComments = async () => {
     try {
-      const res = await axios.get('/api/photos/comments');
+      const res = await axios.get('/api/photo-comments');
       setComments(res.data);
     } catch (err) {
       console.error(err);
@@ -40,7 +40,7 @@ const PhotoAlbum = ({ user }) => {
     if (!text.trim()) return;
 
     try {
-      const res = await axios.post(`/api/photos/${photoId}/comments`, { text });
+      const res = await axios.post(`/api/photo-comments/${photoId}`, { text });
       setComments(prev => [...prev, res.data]);
       setNewCommentTexts(prev => ({ ...prev, [photoId]: '' }));
     } catch (err) {
@@ -51,7 +51,7 @@ const PhotoAlbum = ({ user }) => {
 
   const handleDeleteComment = async (commentId) => {
     try {
-      await axios.delete(`/api/photos/comments/${commentId}`);
+      await axios.delete(`/api/photo-comments/${commentId}`);
       setComments(prev => prev.filter(c => c.id !== commentId));
     } catch (err) {
       console.error(err);
