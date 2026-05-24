@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2 } from 'lucide-react';
+import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2, MessageSquare } from 'lucide-react';
 
 const PhotoAlbum = ({ user }) => {
   const [photos, setPhotos] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'photos', 'stamps'
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [expandedComments, setExpandedComments] = useState({});
+  const [newCommentTexts, setNewCommentTexts] = useState({});
 
   useEffect(() => {
     fetchPhotos();
+    fetchComments();
   }, []);
 
   const fetchPhotos = async () => {
@@ -19,6 +23,47 @@ const PhotoAlbum = ({ user }) => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const fetchComments = async () => {
+    try {
+      const res = await axios.get('/api/photos/comments');
+      setComments(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAddComment = async (e, photoId) => {
+    e.preventDefault();
+    const text = newCommentTexts[photoId] || '';
+    if (!text.trim()) return;
+
+    try {
+      const res = await axios.post(`/api/photos/${photoId}/comments`, { text });
+      setComments(prev => [...prev, res.data]);
+      setNewCommentTexts(prev => ({ ...prev, [photoId]: '' }));
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de l\'ajout du commentaire');
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await axios.delete(`/api/photos/comments/${commentId}`);
+      setComments(prev => prev.filter(c => c.id !== commentId));
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la suppression du commentaire');
+    }
+  };
+
+  const toggleComments = (photoId) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [photoId]: !prev[photoId]
+    }));
   };
 
   const handleDelete = async (id) => {
@@ -169,9 +214,116 @@ const PhotoAlbum = ({ user }) => {
                   </div>
                 </>
               )}
+              <PhotoComments
+                photoId={photo.id}
+                comments={comments}
+                user={user}
+                onAddComment={handleAddComment}
+                onDeleteComment={handleDeleteComment}
+                expanded={!!expandedComments[photo.id]}
+                onToggle={() => toggleComments(photo.id)}
+                newCommentText={newCommentTexts[photo.id]}
+                setNewCommentText={(val) => setNewCommentTexts(prev => ({ ...prev, [photo.id]: val }))}
+                isStamp={!!photo.is_stamp}
+              />
             </motion.div>
           ))}
         </div>
+      )}
+    </div>
+  );
+};
+
+const PhotoComments = ({ 
+  photoId, 
+  comments, 
+  user, 
+  onAddComment, 
+  onDeleteComment, 
+  expanded, 
+  onToggle, 
+  newCommentText, 
+  setNewCommentText,
+  isStamp
+}) => {
+  const photoComments = comments.filter(c => c.photo_id === photoId);
+  
+  return (
+    <div 
+      className="photo-comments-section" 
+      style={{ 
+        borderTop: (expanded && !isStamp) ? '1px solid var(--glass-border)' : 'none',
+        background: isStamp ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.2)',
+        borderRadius: isStamp ? '12px' : '0 0 15px 15px',
+        marginTop: isStamp ? '12px' : '0',
+        border: isStamp ? '1px solid var(--glass-border)' : 'none'
+      }}
+    >
+      <button 
+        className="comments-header-btn" 
+        onClick={onToggle}
+      >
+        <MessageSquare size={14} color={photoComments.length > 0 ? "var(--primary)" : "currentColor"} />
+        <span>
+          {photoComments.length === 0 
+            ? "Ajouter un commentaire" 
+            : `${photoComments.length} commentaire${photoComments.length > 1 ? 's' : ''}`
+          }
+        </span>
+      </button>
+
+      {expanded && (
+        <>
+          {photoComments.length > 0 && (
+            <div className="comments-list">
+              {photoComments.map(comment => (
+                <div key={comment.id} className="comment-item">
+                  <div className="comment-content">
+                    <span className="comment-author">{comment.username}</span>
+                    <span className="comment-text">{comment.text}</span>
+                    <span className="comment-date">
+                      {new Date(comment.created_at).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  {(user?.role === 'admin' || user?.id === comment.user_id) && (
+                    <button 
+                      className="comment-delete-btn"
+                      onClick={() => onDeleteComment(comment.id)}
+                      title="Supprimer le commentaire"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {user ? (
+            <form onSubmit={(e) => onAddComment(e, photoId)} className="comment-form">
+              <input
+                type="text"
+                className="comment-input"
+                placeholder="Écrire un commentaire..."
+                value={newCommentText || ''}
+                onChange={(e) => setNewCommentText(e.target.value)}
+                maxLength={500}
+              />
+              <button type="submit" className="comment-submit-btn">
+                Envoyer
+              </button>
+            </form>
+          ) : (
+            <p className="comment-auth-prompt">
+              Veuillez vous connecter pour commenter.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
