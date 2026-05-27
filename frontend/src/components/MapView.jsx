@@ -102,6 +102,7 @@ const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
             place={selectedPlace} 
             onClose={() => setSelectedPlace(null)} 
             user={user}
+            onPlaceUpdated={fetchPlaces}
             onAddPhoto={(p) => {
               setSelectedPlace(null);
               if (onAddPhoto) onAddPhoto(p);

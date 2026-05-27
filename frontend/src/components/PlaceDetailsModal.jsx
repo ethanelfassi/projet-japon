@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Pencil, Check, X } from 'lucide-react';
 
-const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user }) => {
+const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, onPlaceUpdated }) => {
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -12,6 +12,18 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [comments, setComments] = useState([]);
   const [newCommentTexts, setNewCommentTexts] = useState({});
+
+  // Edit states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [userGroups, setUserGroups] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit photo caption states
+  const [editingPhotoId, setEditingPhotoId] = useState(null);
+  const [editCaptionText, setEditCaptionText] = useState('');
+  const [isSavingCaption, setIsSavingCaption] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -74,6 +86,68 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
     }
   };
 
+  useEffect(() => {
+    if (user && user.role === 'editeur' && place?.visibility === 'group') {
+      axios.get('/api/groups')
+        .then(res => setUserGroups(res.data))
+        .catch(err => console.error("Error fetching user groups:", err));
+    }
+  }, [user, place]);
+
+  const canEdit = user && (
+    user.role === 'admin' ||
+    (user.role === 'editeur' && (
+      place.visibility === 'public' ||
+      place.created_by === user.id ||
+      (place.visibility === 'group' && userGroups.some(g => g.id === place.group_id))
+    ))
+  );
+
+  const handleStartEdit = () => {
+    setEditName(place.name);
+    setEditDescription(place.description || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) return;
+    setIsSaving(true);
+    try {
+      await axios.patch(`/api/places/${place.id}`, {
+        name: editName,
+        description: editDescription
+      });
+      setIsEditing(false);
+      if (onPlaceUpdated) {
+        onPlaceUpdated();
+      }
+    } catch (err) {
+      console.error("Error updating place:", err);
+      alert("Erreur lors de la modification");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSavePhotoCaption = async (photoId) => {
+    setIsSavingCaption(true);
+    try {
+      await axios.patch(`/api/photos/${photoId}`, {
+        caption: editCaptionText
+      });
+      setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, caption: editCaptionText } : p));
+      setEditingPhotoId(null);
+      if (onPhotoDeleted) {
+        onPhotoDeleted(); // refresh parent count
+      }
+    } catch (err) {
+      console.error("Error updating photo caption:", err);
+      alert("Erreur lors de la modification de la description");
+    } finally {
+      setIsSavingCaption(false);
+    }
+  };
+
   const handleDeletePhoto = async (id) => {
     try {
       await axios.delete(`/api/photos/${id}`);
@@ -119,14 +193,78 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
         </button>
 
         <div style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', marginBottom: '10px' }}>
-            {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
-            <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
-              {place.type === 'activity' ? 'Activité' : 'Lieu'}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)' }}>
+              {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
+              <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                {place.type === 'activity' ? 'Activité' : 'Lieu'}
+              </span>
+            </div>
+            
+            {canEdit && !isEditing && (
+              <button 
+                className="btn-glass" 
+                style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                onClick={handleStartEdit}
+              >
+                <Pencil size={14} /> Modifier
+              </button>
+            )}
           </div>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{place.description}</p>
+
+          {isEditing ? (
+            <form 
+              onSubmit={e => { e.preventDefault(); handleSaveEdit(); }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}
+            >
+              <input
+                type="text"
+                className="glass"
+                style={{ padding: '10px 15px', color: 'white', width: '100%', fontSize: '1.2rem', fontWeight: 600 }}
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Titre du souvenir"
+                required
+              />
+              <textarea
+                className="glass"
+                style={{ padding: '12px 15px', color: 'white', width: '100%', minHeight: '100px', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                placeholder="Description..."
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  }
+                }}
+              />
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <button 
+                  type="submit"
+                  className="btn-primary" 
+                  style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  disabled={isSaving || !editName.trim()}
+                >
+                  {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button 
+                  type="button"
+                  className="btn-glass" 
+                  style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{place.description}</p>
+            </>
+          )}
         </div>
 
         <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '30px' }}>
@@ -212,8 +350,53 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
                       onClick={() => setSelectedPhoto(photo)}
                     />
                   )}
-                  {photo.caption && (
-                    <p style={{ fontSize: '0.7rem', marginTop: '5px', color: 'var(--text-muted)', textAlign: 'center' }}>{photo.caption}</p>
+                  {editingPhotoId === photo.id ? (
+                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginTop: '5px', width: '100%', padding: '0 5px' }}>
+                      <input
+                        type="text"
+                        className="glass"
+                        value={editCaptionText}
+                        onChange={e => setEditCaptionText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSavePhotoCaption(photo.id);
+                          }
+                        }}
+                        style={{ fontSize: '0.7rem', padding: '4px 8px', color: 'white', flex: 1 }}
+                        autoFocus
+                        disabled={isSavingCaption}
+                      />
+                      <button 
+                        onClick={() => handleSavePhotoCaption(photo.id)} 
+                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex' }}
+                        disabled={isSavingCaption}
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button 
+                        onClick={() => setEditingPhotoId(null)} 
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
+                        disabled={isSavingCaption}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', marginTop: '5px', minHeight: '18px', width: '100%', padding: '0 5px' }}>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '85%' }}>
+                        {photo.caption || ((canEdit && isEditing) ? 'Aucune description' : '')}
+                      </p>
+                      {canEdit && isEditing && (
+                        <button 
+                          onClick={() => { setEditingPhotoId(photo.id); setEditCaptionText(photo.caption || ''); }} 
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '2px' }}
+                          title="Modifier la description"
+                        >
+                          <Pencil size={10} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
