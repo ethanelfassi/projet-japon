@@ -272,9 +272,11 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Camera size={20} /> Souvenirs ({photos.length})
             </h3>
-            <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Plus size={16} /> Ajouter
-            </button>
+            {(user?.role === 'editeur' || user?.role === 'admin') && (
+              <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Plus size={16} /> Ajouter
+              </button>
+            )}
           </div>
           
           {loadingPhotos ? (
