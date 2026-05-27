@@ -63,10 +63,20 @@ const initDb = async () => {
       is_stamp INTEGER DEFAULT 0,
       stamp_style TEXT DEFAULT 'classic',
       cloudinary_id TEXT,
+      media_type TEXT DEFAULT 'photo',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS photo_comments (
+      id SERIAL PRIMARY KEY,
+      photo_id INTEGER NOT NULL REFERENCES photos(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
 
+  await pool.query(`ALTER TABLE photos ADD COLUMN IF NOT EXISTS media_type TEXT DEFAULT 'photo'`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);
   await pool.query(`
     UPDATE users SET role = 'admin'
