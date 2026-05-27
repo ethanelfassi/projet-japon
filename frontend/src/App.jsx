@@ -82,7 +82,7 @@ function App() {
       case 'groups':
         return user ? <GroupsManager user={user} /> : <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('groups')} />;
       case 'schedule':
-        return <Schedule user={user} />;
+        return (user?.role === 'admin' || user?.role === 'editeur') ? <Schedule user={user} /> : <Hero />;
       case 'admin':
         return user?.role === 'admin' ? <AdminPanel currentUser={user} /> : <Hero />;
       default:

@@ -36,12 +36,14 @@ const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
         icon={<Compass size={20} />}
         label="Carte"
       />
-      <NavButton
-        active={activeTab === 'schedule'}
-        onClick={() => setActiveTab('schedule')}
-        icon={<CalendarDays size={20} />}
-        label="Planning"
-      />
+      {(user?.role === 'admin' || user?.role === 'editeur') && (
+        <NavButton
+          active={activeTab === 'schedule'}
+          onClick={() => setActiveTab('schedule')}
+          icon={<CalendarDays size={20} />}
+          label="Planning"
+        />
+      )}
       
       {/* Auth / Groups */}
       {user ? (

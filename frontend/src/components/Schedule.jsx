@@ -64,6 +64,7 @@ const ItemCard = ({ item, canEdit, onDelete, style }) => {
   return (
     <div
       className="glass"
+      onMouseDown={e => e.stopPropagation()}
       style={{
         padding: '5px 8px',
         borderRadius: '7px',
