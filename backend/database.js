@@ -74,6 +74,18 @@ const initDb = async () => {
       text TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS itinerary (
+      id SERIAL PRIMARY KEY,
+      date DATE NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      time_start TEXT,
+      time_end TEXT,
+      place_id INTEGER REFERENCES places(id),
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);

@@ -308,10 +308,7 @@ app.post('/api/photo-comments/:photo_id', requireAuth, async (req, res) => {
       'INSERT INTO photo_comments (photo_id, user_id, text) VALUES ($1, $2, $3) RETURNING id, photo_id, user_id, text, created_at',
       [parsedPhotoId, req.user.id, text]
     );
-    res.json({
-      ...rows[0],
-      username: req.user.username
-    });
+    res.json({ ...rows[0], username: req.user.username });
   } catch (err) {
     res.status(500).json({ error: 'Database error adding comment' });
   }
@@ -322,16 +319,37 @@ app.delete('/api/photo-comments/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { rows } = await pool.query('SELECT user_id FROM photo_comments WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Comment not found' });
-    
-    if (req.user.role !== 'admin' && rows[0].user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-    
+    if (req.user.role !== 'admin' && rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
     await pool.query('DELETE FROM photo_comments WHERE id = $1', [id]);
     res.json({ message: 'Comment deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Database error deleting comment' });
   }
+});
+
+// --- Itinerary ---
+app.get('/api/itinerary', requireAuth, async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT i.*, p.name as place_name, p.location as place_location
+    FROM itinerary i
+    LEFT JOIN places p ON i.place_id = p.id
+    ORDER BY i.date ASC, i.time_start ASC
+  `);
+  res.json(rows);
+});
+
+app.post('/api/itinerary', requireRole('editeur', 'admin'), async (req, res) => {
+  const { date, title, description, time_start, time_end, place_id } = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO itinerary (date, title, description, time_start, time_end, place_id, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+    [date, title, description, time_start || null, time_end || null, place_id || null, req.user.id]
+  );
+  res.json(rows[0]);
+});
+
+app.delete('/api/itinerary/:id', requireRole('editeur', 'admin'), async (req, res) => {
+  await pool.query('DELETE FROM itinerary WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Deleted' });
 });
 
 // --- Admin ---
