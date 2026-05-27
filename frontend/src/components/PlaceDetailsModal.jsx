@@ -173,7 +173,10 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
           </div>
 
           {isEditing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
+            <form 
+              onSubmit={e => { e.preventDefault(); handleSaveEdit(); }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}
+            >
               <input
                 type="text"
                 className="glass"
@@ -189,17 +192,24 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                 value={editDescription}
                 onChange={e => setEditDescription(e.target.value)}
                 placeholder="Description..."
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  }
+                }}
               />
               <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
                 <button 
+                  type="submit"
                   className="btn-primary" 
                   style={{ padding: '8px 20px', fontSize: '0.9rem' }}
-                  onClick={handleSaveEdit}
                   disabled={isSaving || !editName.trim()}
                 >
                   {isSaving ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
                 <button 
+                  type="button"
                   className="btn-glass" 
                   style={{ padding: '8px 20px', fontSize: '0.9rem' }}
                   onClick={() => setIsEditing(false)}
@@ -208,7 +218,7 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                   Annuler
                 </button>
               </div>
-            </div>
+            </form>
           ) : (
             <>
               <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
@@ -296,6 +306,12 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                         className="glass"
                         value={editCaptionText}
                         onChange={e => setEditCaptionText(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSavePhotoCaption(photo.id);
+                          }
+                        }}
                         style={{ fontSize: '0.7rem', padding: '4px 8px', color: 'white', flex: 1 }}
                         autoFocus
                         disabled={isSavingCaption}
@@ -318,9 +334,9 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                   ) : (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', marginTop: '5px', minHeight: '18px', width: '100%', padding: '0 5px' }}>
                       <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '85%' }}>
-                        {photo.caption || (canEdit ? 'Aucune description' : '')}
+                        {photo.caption || ((canEdit && isEditing) ? 'Aucune description' : '')}
                       </p>
-                      {canEdit && (
+                      {canEdit && isEditing && (
                         <button 
                           onClick={() => { setEditingPhotoId(photo.id); setEditCaptionText(photo.caption || ''); }} 
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '2px' }}
