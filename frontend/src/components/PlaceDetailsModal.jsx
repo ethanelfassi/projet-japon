@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2, Pencil } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, Pencil, Check, X } from 'lucide-react';
 
 const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, onPlaceUpdated }) => {
   const [photos, setPhotos] = useState([]);
@@ -14,6 +14,11 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
   const [editDescription, setEditDescription] = useState('');
   const [userGroups, setUserGroups] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Edit photo caption states
+  const [editingPhotoId, setEditingPhotoId] = useState(null);
+  const [editCaptionText, setEditCaptionText] = useState('');
+  const [isSavingCaption, setIsSavingCaption] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -81,6 +86,25 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
       alert("Erreur lors de la modification");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSavePhotoCaption = async (photoId) => {
+    setIsSavingCaption(true);
+    try {
+      await axios.patch(`/api/photos/${photoId}`, {
+        caption: editCaptionText
+      });
+      setPhotos(prev => prev.map(p => p.id === photoId ? { ...p, caption: editCaptionText } : p));
+      setEditingPhotoId(null);
+      if (onPhotoDeleted) {
+        onPhotoDeleted(); // refresh parent count
+      }
+    } catch (err) {
+      console.error("Error updating photo caption:", err);
+      alert("Erreur lors de la modification de la description");
+    } finally {
+      setIsSavingCaption(false);
     }
   };
 
@@ -265,8 +289,47 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                       onClick={() => window.open(photo.url, '_blank')}
                     />
                   )}
-                  {photo.caption && (
-                    <p style={{ fontSize: '0.7rem', marginTop: '5px', color: 'var(--text-muted)', textAlign: 'center' }}>{photo.caption}</p>
+                  {editingPhotoId === photo.id ? (
+                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginTop: '5px', width: '100%', padding: '0 5px' }}>
+                      <input
+                        type="text"
+                        className="glass"
+                        value={editCaptionText}
+                        onChange={e => setEditCaptionText(e.target.value)}
+                        style={{ fontSize: '0.7rem', padding: '4px 8px', color: 'white', flex: 1 }}
+                        autoFocus
+                        disabled={isSavingCaption}
+                      />
+                      <button 
+                        onClick={() => handleSavePhotoCaption(photo.id)} 
+                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex' }}
+                        disabled={isSavingCaption}
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button 
+                        onClick={() => setEditingPhotoId(null)} 
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
+                        disabled={isSavingCaption}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '5px', marginTop: '5px', minHeight: '18px', width: '100%', padding: '0 5px' }}>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '85%' }}>
+                        {photo.caption || (canEdit ? 'Aucune description' : '')}
+                      </p>
+                      {canEdit && (
+                        <button 
+                          onClick={() => { setEditingPhotoId(photo.id); setEditCaptionText(photo.caption || ''); }} 
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', padding: '2px' }}
+                          title="Modifier la description"
+                        >
+                          <Pencil size={10} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
