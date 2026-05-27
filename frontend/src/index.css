@@ -392,3 +392,35 @@ button {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
 }
+
+/* Download Button */
+.download-btn {
+  position: absolute;
+  top: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #ff4d6d;
+  border: none;
+  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.photo-card:hover .download-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.download-btn:hover {
+  background: #ff4d6d;
+  color: white;
+  transform: scale(1.1) rotate(-5deg);
+}
