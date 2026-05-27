@@ -94,9 +94,11 @@ const GroupsManager = ({ user }) => {
           <Users size={28} color="var(--primary)" />
           Mes <span style={{ color: 'var(--primary)' }}>&nbsp;Groupes</span>
         </h2>
-        <button onClick={() => setCreating(!creating)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
-          <Plus size={16} /> Nouveau groupe
-        </button>
+        {(user.role === 'editeur' || user.role === 'admin') && (
+          <button onClick={() => setCreating(!creating)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
+            <Plus size={16} /> Nouveau groupe
+          </button>
+        )}
       </div>
 
       {/* Create group form */}

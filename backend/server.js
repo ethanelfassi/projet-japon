@@ -106,7 +106,7 @@ app.get('/api/users', requireAuth, async (req, res) => {
 });
 
 // --- Groups ---
-app.post('/api/groups', requireAuth, async (req, res) => {
+app.post('/api/groups', requireRole('editeur', 'admin'), async (req, res) => {
   try {
     const { name, members } = req.body;
     const { rows } = await pool.query(
@@ -133,13 +133,12 @@ app.get('/api/groups', requireAuth, async (req, res) => {
   const { rows } = await pool.query(`
     SELECT g.*,
       (SELECT json_agg(json_build_object('id', u.id, 'username', u.username))
-       FROM group_members gm2 JOIN users u ON gm2.user_id = u.id
-       WHERE gm2.group_id = g.id) as members,
+       FROM group_members gm JOIN users u ON gm.user_id = u.id
+       WHERE gm.group_id = g.id) as members,
       (SELECT username FROM users WHERE id = g.created_by) as creator_name
     FROM groups g
-    JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = $1
     ORDER BY g.created_at DESC
-  `, [req.user.id]);
+  `);
   res.json(rows);
 });
 
@@ -165,7 +164,10 @@ app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
   const { userId } = req.body;
   const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
-  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  const isSelf = parseInt(userId) === req.user.id;
+  if (!isSelf && rows[0].created_by !== req.user.id && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
   await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.params.id, userId]);
   res.json({ message: 'Member added' });
 });
