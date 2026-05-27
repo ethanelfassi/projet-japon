@@ -61,7 +61,11 @@ app.use(authenticateToken);
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: { folder: 'projet-japon', allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+  params: { 
+    folder: 'projet-japon', 
+    resource_type: 'auto',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv'] 
+  },
 });
 const upload = multer({ storage });
 
@@ -184,12 +188,13 @@ app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'),
   const publicId = req.file.filename;
   const isStampInt = is_stamp === 'true' || is_stamp === 1 ? 1 : 0;
   const style = stamp_style || 'classic';
+  const mediaType = req.file.mimetype && req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
   try {
     const { rows } = await pool.query(
-      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
-      [place_id, url, caption, isStampInt, style, publicId]
+      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id, media_type) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [place_id, url, caption, isStampInt, style, publicId, mediaType]
     );
-    res.json({ id: rows[0].id, place_id, url, caption, is_stamp: isStampInt, stamp_style: style });
+    res.json({ id: rows[0].id, place_id, url, caption, is_stamp: isStampInt, stamp_style: style, media_type: mediaType });
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }

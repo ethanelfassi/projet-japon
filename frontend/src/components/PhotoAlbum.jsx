@@ -141,11 +141,19 @@ const PhotoAlbum = ({ user }) => {
                 </div>
               ) : (
                 <>
-                  <img 
-                    src={photo.url} 
-                    alt={photo.caption} 
-                    style={{ width: '100%', display: 'block', borderBottom: '1px solid var(--glass-border)' }} 
-                  />
+                  {photo.media_type === 'video' ? (
+                    <video 
+                      src={photo.url} 
+                      controls 
+                      style={{ width: '100%', display: 'block', borderBottom: '1px solid var(--glass-border)', background: 'black' }} 
+                    />
+                  ) : (
+                    <img 
+                      src={photo.url} 
+                      alt={photo.caption} 
+                      style={{ width: '100%', display: 'block', borderBottom: '1px solid var(--glass-border)' }} 
+                    />
+                  )}
                   <div style={{ padding: '20px' }}>
                     <p style={{ fontWeight: 700, marginBottom: '8px', fontSize: '1.05rem' }}>{photo.caption || 'Sans légende'}</p>
                     <p style={{ color: 'var(--primary)', fontSize: '0.9rem', fontWeight: 600, marginBottom: '12px' }}>{photo.place_name}</p>

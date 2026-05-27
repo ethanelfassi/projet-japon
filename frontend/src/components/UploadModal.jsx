@@ -95,12 +95,18 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
               ) : (
                 <>
                   <Upload size={40} color="var(--text-muted)" />
-                  <p style={{ marginTop: '10px', color: 'var(--text-muted)' }}>Cliquez pour choisir une photo</p>
+                  <p style={{ marginTop: '10px', color: 'var(--text-muted)' }}>Cliquez pour choisir une photo ou une vidéo</p>
                 </>
               )}
               <input 
-                id="file-input" type="file" hidden accept="image/*"
-                onChange={e => setFile(e.target.files[0])}
+                id="file-input" type="file" hidden accept="image/*,video/*"
+                onChange={e => {
+                  const selectedFile = e.target.files[0];
+                  setFile(selectedFile);
+                  if (selectedFile && selectedFile.type.startsWith('video/')) {
+                    setIsStamp(false);
+                  }
+                }}
               />
             </div>
 
@@ -112,49 +118,51 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
               onChange={e => setCaption(e.target.value)}
             />
 
-            <div style={{ marginBottom: '25px' }}>
-              <div 
-                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', cursor: 'pointer' }} 
-                onClick={() => setIsStamp(!isStamp)}
-              >
-                <div style={{ 
-                  width: '20px', height: '20px', borderRadius: '4px', 
-                  border: '2px solid var(--primary)', 
-                  background: isStamp ? 'var(--primary)' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                  {isStamp && <Check size={14} color="white" />}
-                </div>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Transformer en timbre de collection</span>
-              </div>
-
-              {isStamp && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', overflow: 'hidden' }}
+            {(!file || !file.type.startsWith('video/')) && (
+              <div style={{ marginBottom: '25px' }}>
+                <div 
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px', cursor: 'pointer' }} 
+                  onClick={() => setIsStamp(!isStamp)}
                 >
-                  {STYLES.map(s => (
-                    <div 
-                      key={s.id}
-                      onClick={() => setStampStyle(s.id)}
-                      style={{
-                        padding: '10px 5px',
-                        borderRadius: '8px',
-                        background: stampStyle === s.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                        border: stampStyle === s.id ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <div style={{ fontSize: '1.2rem', marginBottom: '5px' }}>{s.icon}</div>
-                      <div style={{ fontSize: '0.7rem' }}>{s.label}</div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-            </div>
+                  <div style={{ 
+                    width: '20px', height: '20px', borderRadius: '4px', 
+                    border: '2px solid var(--primary)', 
+                    background: isStamp ? 'var(--primary)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                    {isStamp && <Check size={14} color="white" />}
+                  </div>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>Transformer en timbre de collection</span>
+                </div>
+
+                {isStamp && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', overflow: 'hidden' }}
+                  >
+                    {STYLES.map(s => (
+                      <div 
+                        key={s.id}
+                        onClick={() => setStampStyle(s.id)}
+                        style={{
+                          padding: '10px 5px',
+                          borderRadius: '8px',
+                          background: stampStyle === s.id ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                          border: stampStyle === s.id ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ fontSize: '1.2rem', marginBottom: '5px' }}>{s.icon}</div>
+                        <div style={{ fontSize: '0.7rem' }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </div>
+            )}
 
             <button 
               type="submit" 

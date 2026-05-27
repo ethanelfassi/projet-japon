@@ -148,7 +148,14 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted }) => {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  {photo.is_stamp ? (
+                  {photo.media_type === 'video' ? (
+                    <video 
+                      src={photo.url} 
+                      controls 
+                      className="details-photo"
+                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
+                    />
+                  ) : photo.is_stamp ? (
                     <div className="stamp-container" style={{ width: '100%', transform: 'scale(0.8)' }}>
                       <img src={photo.url} alt={photo.caption} className={`stamp-image ${photo.stamp_style || 'classic'}`} />
                       <div className="postmark" style={{ fontSize: '6px', width: '30px', height: '30px' }}>2026</div>
