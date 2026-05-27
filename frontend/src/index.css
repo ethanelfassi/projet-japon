@@ -392,3 +392,285 @@ button {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
 }
+
+/* --- Photo Comments --- */
+.photo-comments-section {
+  border-top: 1px solid var(--glass-border);
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comments-header-btn {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 0;
+}
+
+.comments-header-btn:hover {
+  color: var(--primary);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.comments-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 77, 109, 0.3);
+  border-radius: 2px;
+}
+
+.comment-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  animation: fadeIn 0.3s ease;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.comment-author {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.85rem;
+  margin-right: 8px;
+}
+
+.comment-text {
+  color: var(--text-main);
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.comment-date {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.comment-delete-btn {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 6px;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-delete-btn:hover {
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.1);
+  opacity: 1;
+}
+
+.comment-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.comment-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 8px 15px;
+  color: white;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: border-color 0.3s;
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.comment-submit-btn {
+  background: var(--primary);
+  color: white;
+  padding: 8px 15px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+}
+
+.comment-submit-btn:hover {
+  background: var(--primary-hover);
+}
+
+.comment-auth-prompt {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 5px 0;
+}
+
+.comment-auth-prompt span {
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- Lightbox / Photo Viewer --- */
+.lightbox-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.lightbox-container {
+  width: 100%;
+  max-width: 900px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border-radius: 20px;
+  animation: scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.lightbox-image-side {
+  flex: 1.2;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 300px;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  display: block;
+}
+
+.lightbox-details-side {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 18, 24, 0.95);
+  border-left: 1px solid var(--glass-border);
+  padding: 25px;
+  overflow-y: auto;
+  max-height: 85vh;
+}
+
+.lightbox-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1200;
+  transition: all 0.2s;
+}
+
+.lightbox-close-btn:hover {
+  background: var(--primary);
+  transform: scale(1.1);
+  border-color: var(--primary);
+}
+
+.lightbox-caption {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.lightbox-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+/* Version responsive mobile */
+@media (max-width: 768px) {
+  .lightbox-container {
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .lightbox-image-side {
+    flex: none;
+    height: 40vh;
+    min-height: 250px;
+  }
+  .lightbox-img {
+    height: 100%;
+    width: 100%;
+    object-fit: contain;
+  }
+  .lightbox-details-side {
+    flex: none;
+    border-left: none;
+    border-top: 1px solid var(--glass-border);
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+.map-popup-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+}
