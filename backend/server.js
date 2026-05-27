@@ -143,9 +143,10 @@ app.get('/api/groups', requireAuth, async (req, res) => {
 // --- Places ---
 app.get('/api/places', async (req, res) => {
   let result;
+  const photoSub = `(SELECT url FROM photos WHERE place_id = p.id ORDER BY created_at ASC LIMIT 1) as first_photo_url`;
   if (req.user) {
     result = await pool.query(`
-      SELECT DISTINCT p.* FROM places p
+      SELECT DISTINCT p.*, ${photoSub} FROM places p
       LEFT JOIN group_members gm ON p.group_id = gm.group_id
       WHERE p.visibility = 'public'
          OR p.created_by = $1
@@ -153,7 +154,7 @@ app.get('/api/places', async (req, res) => {
       ORDER BY p.created_at DESC
     `, [req.user.id, req.user.id]);
   } else {
-    result = await pool.query("SELECT * FROM places WHERE visibility = 'public' ORDER BY created_at DESC");
+    result = await pool.query(`SELECT p.*, ${photoSub} FROM places p WHERE visibility = 'public' ORDER BY created_at DESC`);
   }
   res.json(result.rows);
 });
