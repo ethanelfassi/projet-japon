@@ -70,12 +70,9 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const adminNames = ['ethan', 'laurine', 'lwi', 'ruben', 'ameline'];
-    const isAdmin = adminNames.some(n => username.toLowerCase().includes(n));
-    const role = isAdmin ? 'admin' : 'visiteur';
     const { rows } = await pool.query(
       'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role',
-      [username, hashedPassword, role]
+      [username, hashedPassword, 'visiteur']
     );
     const token = jwt.sign({ id: rows[0].id, username: rows[0].username }, JWT_SECRET);
     res.json({ token, user: { id: rows[0].id, username: rows[0].username, role: rows[0].role } });

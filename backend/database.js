@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const fs = require('fs');
+const bcrypt = require('bcrypt');
 
 const isDocker = fs.existsSync('/.dockerenv');
 let dbUrl = process.env.DATABASE_URL;
@@ -76,11 +77,16 @@ const initDb = async () => {
   `);
 
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);
-  await pool.query(`
-    UPDATE users SET role = 'admin'
-    WHERE id = (SELECT MIN(id) FROM users)
-    AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')
-  `);
+
+  // Create default admin account if it doesn't exist
+  const { rows: adminRows } = await pool.query(`SELECT id FROM users WHERE username = 'admin'`);
+  if (adminRows.length === 0) {
+    const hash = await bcrypt.hash('piedsdelaurine', 10);
+    await pool.query(
+      `INSERT INTO users (username, password_hash, role) VALUES ('admin', $1, 'admin')`,
+      [hash]
+    );
+  }
 
   const { rows } = await pool.query('SELECT COUNT(*) as count FROM places');
   if (parseInt(rows[0].count) === 0) {
