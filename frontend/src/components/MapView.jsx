@@ -19,7 +19,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-const MapView = ({ onPlaceClick, onAddPhoto }) => {
+const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlace, setSelectedPlace] = useState(null);
@@ -101,6 +101,8 @@ const MapView = ({ onPlaceClick, onAddPhoto }) => {
           <PlaceDetailsModal 
             place={selectedPlace} 
             onClose={() => setSelectedPlace(null)} 
+            user={user}
+            onPlaceUpdated={fetchPlaces}
             onAddPhoto={(p) => {
               setSelectedPlace(null);
               if (onAddPhoto) onAddPhoto(p);

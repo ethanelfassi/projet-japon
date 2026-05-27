@@ -171,9 +171,59 @@ app.post('/api/places', requireRole('editeur', 'admin'), async (req, res) => {
 });
 
 app.patch('/api/places/:id', requireRole('editeur', 'admin'), async (req, res) => {
-  const { status } = req.body;
-  await pool.query('UPDATE places SET status = $1 WHERE id = $2', [status, req.params.id]);
-  res.json({ message: 'Status updated' });
+  const { name, description, status } = req.body;
+  const placeId = req.params.id;
+
+  try {
+    const { rows: placeRows } = await pool.query('SELECT * FROM places WHERE id = $1', [placeId]);
+    if (!placeRows[0]) return res.status(404).json({ error: 'Place not found' });
+    const place = placeRows[0];
+
+    if (req.user.role !== 'admin') {
+      if (place.visibility === 'private') {
+        if (place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: Private place' });
+        }
+      } else if (place.visibility === 'group') {
+        const { rows: memberRows } = await pool.query(
+          'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+          [place.group_id, req.user.id]
+        );
+        if (memberRows.length === 0 && place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: You are not a member of the group sharing this place' });
+        }
+      }
+    }
+
+    const updates = [];
+    const values = [];
+    let paramIdx = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIdx++}`);
+      values.push(name);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIdx++}`);
+      values.push(description);
+    }
+    if (status !== undefined) {
+      updates.push(`status = $${paramIdx++}`);
+      values.push(status);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(placeId);
+    const query = `UPDATE places SET ${updates.join(', ')} WHERE id = $${paramIdx}`;
+    
+    await pool.query(query, values);
+    res.json({ message: 'Place updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- Photos ---

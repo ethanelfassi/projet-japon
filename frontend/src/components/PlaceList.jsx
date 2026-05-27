@@ -344,6 +344,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
             place={selectedPlaceDetails}
             onClose={() => setSelectedPlaceDetails(null)}
             user={user}
+            onPlaceUpdated={fetchPlaces}
             onAddPhoto={(p) => {
               setSelectedPlaceDetails(null);
               onAddPhoto(p);

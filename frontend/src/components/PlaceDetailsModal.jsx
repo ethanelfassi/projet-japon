@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2 } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, Pencil } from 'lucide-react';
 
-const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted }) => {
+const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, onPlaceUpdated }) => {
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+
+  // Edit states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [userGroups, setUserGroups] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -33,6 +40,49 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted }) => {
       active = false;
     };
   }, [place?.id]);
+
+  useEffect(() => {
+    if (user && user.role === 'editeur' && place?.visibility === 'group') {
+      axios.get('/api/groups')
+        .then(res => setUserGroups(res.data))
+        .catch(err => console.error("Error fetching user groups:", err));
+    }
+  }, [user, place]);
+
+  const canEdit = user && (
+    user.role === 'admin' ||
+    (user.role === 'editeur' && (
+      place.visibility === 'public' ||
+      place.created_by === user.id ||
+      (place.visibility === 'group' && userGroups.some(g => g.id === place.group_id))
+    ))
+  );
+
+  const handleStartEdit = () => {
+    setEditName(place.name);
+    setEditDescription(place.description || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) return;
+    setIsSaving(true);
+    try {
+      await axios.patch(`/api/places/${place.id}`, {
+        name: editName,
+        description: editDescription
+      });
+      setIsEditing(false);
+      if (onPlaceUpdated) {
+        onPlaceUpdated();
+      }
+    } catch (err) {
+      console.error("Error updating place:", err);
+      alert("Erreur lors de la modification");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDeletePhoto = async (id) => {
     try {
@@ -79,14 +129,68 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted }) => {
         </button>
 
         <div style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', marginBottom: '10px' }}>
-            {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
-            <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
-              {place.type === 'activity' ? 'Activité' : 'Lieu'}
-            </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)' }}>
+              {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
+              <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
+                {place.type === 'activity' ? 'Activité' : 'Lieu'}
+              </span>
+            </div>
+            
+            {canEdit && !isEditing && (
+              <button 
+                className="btn-glass" 
+                style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                onClick={handleStartEdit}
+              >
+                <Pencil size={14} /> Modifier
+              </button>
+            )}
           </div>
-          <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{place.description}</p>
+
+          {isEditing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
+              <input
+                type="text"
+                className="glass"
+                style={{ padding: '10px 15px', color: 'white', width: '100%', fontSize: '1.2rem', fontWeight: 600 }}
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Titre du souvenir"
+                required
+              />
+              <textarea
+                className="glass"
+                style={{ padding: '12px 15px', color: 'white', width: '100%', minHeight: '100px', fontSize: '1rem', fontFamily: 'inherit', resize: 'vertical' }}
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                placeholder="Description..."
+              />
+              <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                <button 
+                  className="btn-primary" 
+                  style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editName.trim()}
+                >
+                  {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button 
+                  className="btn-glass" 
+                  style={{ padding: '8px 20px', fontSize: '0.9rem' }}
+                  onClick={() => setIsEditing(false)}
+                  disabled={isSaving}
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{place.description}</p>
+            </>
+          )}
         </div>
 
         <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '30px' }}>

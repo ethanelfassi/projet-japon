@@ -75,6 +75,7 @@ function App() {
         return <MapView 
           onPlaceClick={handlePlaceClickFromMap} 
           onAddPhoto={setUploadPlace} 
+          user={user}
         />;
       case 'auth':
         return <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('places')} />;
