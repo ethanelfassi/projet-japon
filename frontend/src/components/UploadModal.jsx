@@ -10,12 +10,14 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
   const [stampStyle, setStampStyle] = useState('classic');
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) return;
 
     setUploading(true);
+    setUploadProgress(0);
     const formData = new FormData();
     formData.append('photo', file);
     formData.append('place_id', place.id);
@@ -25,7 +27,11 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
 
     try {
       await axios.post('/api/photos', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
       });
       setSuccess(true);
       setTimeout(() => {
@@ -164,13 +170,33 @@ const UploadModal = ({ place, onClose, onUploadSuccess }) => {
               </div>
             )}
 
+            {uploading && (
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  <span>Téléversement du fichier...</span>
+                  <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>{uploadProgress}%</span>
+                </div>
+                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                  <div 
+                    style={{ 
+                      width: `${uploadProgress}%`, 
+                      height: '100%', 
+                      background: 'linear-gradient(90deg, var(--primary), var(--primary-hover))', 
+                      transition: 'width 0.1s ease-out',
+                      borderRadius: '4px'
+                    }} 
+                  />
+                </div>
+              </div>
+            )}
+
             <button 
               type="submit" 
               className="btn-primary" 
               style={{ width: '100%', padding: '15px' }}
               disabled={uploading || !file}
             >
-              {uploading ? 'Envoi en cours...' : 'Publier le souvenir'}
+              {uploading ? `Envoi en cours (${uploadProgress}%)` : 'Publier le souvenir'}
             </button>
           </form>
         ) : (
