@@ -9,6 +9,7 @@ import MapView from './components/MapView';
 import Auth from './components/Auth';
 import GroupsManager from './components/GroupsManager';
 import AdminPanel from './components/AdminPanel';
+import Schedule from './components/Schedule';
 import './App.css';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
@@ -58,33 +59,29 @@ function App() {
     setActiveTab('places');
   };
 
+  const guardAuth = (component) => {
+    if (!user) return <Auth setUser={setUser} onAuthSuccess={() => {}} />;
+    return component;
+  };
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'home':
-        return <Hero />;
       case 'places':
-        return <PlaceList 
-          onAddPhoto={setUploadPlace} 
-          selectedPlaceDetails={selectedPlaceDetails}
-          setSelectedPlaceDetails={setSelectedPlaceDetails}
-          user={user}
-        />;
+        return guardAuth(<PlaceList onAddPhoto={setUploadPlace} selectedPlaceDetails={selectedPlaceDetails} setSelectedPlaceDetails={setSelectedPlaceDetails} user={user} />);
       case 'album':
-        return <PhotoAlbum user={user} />;
+        return guardAuth(<PhotoAlbum user={user} />);
       case 'map':
-        return <MapView 
-          onPlaceClick={handlePlaceClickFromMap} 
-          onAddPhoto={setUploadPlace} 
-          user={user}
-        />;
+        return guardAuth(<MapView onPlaceClick={handlePlaceClickFromMap} onAddPhoto={setUploadPlace} user={user} />);
       case 'auth':
         return <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('places')} />;
       case 'groups':
-        return user ? <GroupsManager user={user} /> : <Auth setUser={setUser} onAuthSuccess={() => setActiveTab('groups')} />;
+        return guardAuth(<GroupsManager user={user} />);
+      case 'schedule':
+        return guardAuth(<Schedule user={user} />);
       case 'admin':
-        return user?.role === 'admin' ? <AdminPanel currentUser={user} /> : <Hero />;
+        return user?.role === 'admin' ? <AdminPanel currentUser={user} /> : guardAuth(<></>);
       default:
-        return <Hero />;
+        return guardAuth(<PlaceList onAddPhoto={setUploadPlace} selectedPlaceDetails={selectedPlaceDetails} setSelectedPlaceDetails={setSelectedPlaceDetails} user={user} />);
     }
   };
 

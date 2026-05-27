@@ -77,6 +77,8 @@ const initDb = async () => {
   `);
 
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE photos ADD COLUMN IF NOT EXISTS uploaded_by INTEGER REFERENCES users(id)`);
 
   // Create default admin account if it doesn't exist
   const { rows: adminRows } = await pool.query(`SELECT id FROM users WHERE username = 'admin'`);

@@ -27,8 +27,8 @@ const authenticateToken = async (req, res, next) => {
   if (!token) { req.user = null; return next(); }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { rows } = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [decoded.id]);
-    req.user = rows[0] || null;
+    const { rows } = await pool.query('SELECT id, username, role, banned FROM users WHERE id = $1', [decoded.id]);
+    req.user = (rows[0] && !rows[0].banned) ? rows[0] : null;
     next();
   } catch {
     req.user = null;
@@ -106,7 +106,7 @@ app.get('/api/users', requireAuth, async (req, res) => {
 });
 
 // --- Groups ---
-app.post('/api/groups', requireRole('editeur', 'admin'), async (req, res) => {
+app.post('/api/groups', requireAuth, async (req, res) => {
   try {
     const { name, members } = req.body;
     const { rows } = await pool.query(
@@ -130,28 +130,69 @@ app.post('/api/groups', requireRole('editeur', 'admin'), async (req, res) => {
 });
 
 app.get('/api/groups', requireAuth, async (req, res) => {
-  const { rows } = await pool.query(
-    'SELECT g.* FROM groups g JOIN group_members gm ON g.id = gm.group_id WHERE gm.user_id = $1',
-    [req.user.id]
-  );
+  const { rows } = await pool.query(`
+    SELECT g.*,
+      (SELECT json_agg(json_build_object('id', u.id, 'username', u.username))
+       FROM group_members gm2 JOIN users u ON gm2.user_id = u.id
+       WHERE gm2.group_id = g.id) as members,
+      (SELECT username FROM users WHERE id = g.created_by) as creator_name
+    FROM groups g
+    JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = $1
+    ORDER BY g.created_at DESC
+  `, [req.user.id]);
   res.json(rows);
 });
 
+app.delete('/api/groups/:id', requireAuth, async (req, res) => {
+  const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
+  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  await pool.query('DELETE FROM group_members WHERE group_id = $1', [req.params.id]);
+  await pool.query('DELETE FROM groups WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Group deleted' });
+});
+
+app.patch('/api/groups/:id', requireAuth, async (req, res) => {
+  const { name } = req.body;
+  const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
+  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  await pool.query('UPDATE groups SET name = $1 WHERE id = $2', [name, req.params.id]);
+  res.json({ message: 'Updated' });
+});
+
+app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
+  const { userId } = req.body;
+  const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
+  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.params.id, userId]);
+  res.json({ message: 'Member added' });
+});
+
+app.delete('/api/groups/:id/members/:userId', requireAuth, async (req, res) => {
+  const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
+  if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
+  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  await pool.query('DELETE FROM group_members WHERE group_id = $1 AND user_id = $2', [req.params.id, req.params.userId]);
+  res.json({ message: 'Member removed' });
+});
+
+app.post('/api/groups/:id/leave', requireAuth, async (req, res) => {
+  await pool.query('DELETE FROM group_members WHERE group_id = $1 AND user_id = $2', [req.params.id, req.user.id]);
+  res.json({ message: 'Left group' });
+});
+
 // --- Places ---
-app.get('/api/places', async (req, res) => {
-  let result;
-  if (req.user) {
-    result = await pool.query(`
-      SELECT DISTINCT p.* FROM places p
-      LEFT JOIN group_members gm ON p.group_id = gm.group_id
-      WHERE p.visibility = 'public'
-         OR p.created_by = $1
-         OR (p.visibility = 'group' AND gm.user_id = $2)
-      ORDER BY p.created_at DESC
-    `, [req.user.id, req.user.id]);
-  } else {
-    result = await pool.query("SELECT * FROM places WHERE visibility = 'public' ORDER BY created_at DESC");
-  }
+app.get('/api/places', requireAuth, async (req, res) => {
+  const result = await pool.query(`
+    SELECT DISTINCT p.* FROM places p
+    LEFT JOIN group_members gm ON p.group_id = gm.group_id
+    WHERE p.visibility = 'public'
+       OR p.created_by = $1
+       OR (p.visibility = 'group' AND gm.user_id = $2)
+    ORDER BY p.created_at DESC
+  `, [req.user.id, req.user.id]);
   res.json(result.rows);
 });
 
@@ -173,6 +214,28 @@ app.patch('/api/places/:id', requireRole('editeur', 'admin'), async (req, res) =
   res.json({ message: 'Status updated' });
 });
 
+app.put('/api/places/:id', requireRole('admin'), async (req, res) => {
+  const { name, description, location, type, lat, lng, status } = req.body;
+  await pool.query(
+    'UPDATE places SET name=$1, description=$2, location=$3, type=$4, lat=$5, lng=$6, status=$7 WHERE id=$8',
+    [name, description, location, type, lat, lng, status, req.params.id]
+  );
+  res.json({ message: 'Place updated' });
+});
+
+app.delete('/api/places/:id', requireRole('admin'), async (req, res) => {
+  const { rows } = await pool.query('SELECT cloudinary_id FROM photos WHERE place_id = $1', [req.params.id]);
+  for (const photo of rows) {
+    if (photo.cloudinary_id) {
+      try { await cloudinary.uploader.destroy(photo.cloudinary_id); } catch (e) { console.error(e); }
+    }
+  }
+  await pool.query('DELETE FROM photo_comments WHERE photo_id IN (SELECT id FROM photos WHERE place_id = $1)', [req.params.id]);
+  await pool.query('DELETE FROM photos WHERE place_id = $1', [req.params.id]);
+  await pool.query('DELETE FROM places WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Place deleted' });
+});
+
 // --- Photos ---
 app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
@@ -183,8 +246,8 @@ app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'),
   const style = stamp_style || 'classic';
   try {
     const { rows } = await pool.query(
-      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
-      [place_id, url, caption, isStampInt, style, publicId]
+      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id, uploaded_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [place_id, url, caption, isStampInt, style, publicId, req.user.id]
     );
     res.json({ id: rows[0].id, place_id, url, caption, is_stamp: isStampInt, stamp_style: style });
   } catch (err) {
@@ -192,12 +255,12 @@ app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'),
   }
 });
 
-app.get('/api/photos/:place_id', async (req, res) => {
+app.get('/api/photos/:place_id', requireAuth, async (req, res) => {
   const { rows } = await pool.query('SELECT * FROM photos WHERE place_id = $1', [req.params.place_id]);
   res.json(rows);
 });
 
-app.get('/api/photos', async (req, res) => {
+app.get('/api/photos', requireAuth, async (req, res) => {
   const { rows } = await pool.query(`
     SELECT photos.*, places.name as place_name, places.location as place_location
     FROM photos JOIN places ON photos.place_id = places.id
@@ -217,7 +280,7 @@ app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) 
 });
 
 // --- Photo Comments ---
-app.get('/api/photo-comments', async (req, res) => {
+app.get('/api/photo-comments', requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT pc.*, u.username
@@ -271,7 +334,16 @@ app.delete('/api/photo-comments/:id', requireAuth, async (req, res) => {
 
 // --- Admin ---
 app.get('/api/admin/users', requireRole('admin'), async (req, res) => {
-  const { rows } = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id');
+  const { rows } = await pool.query(`
+    SELECT u.id, u.username, u.role, u.banned, u.created_at,
+      COUNT(DISTINCT p.id) as places_count,
+      COUNT(DISTINCT ph.id) as photos_count
+    FROM users u
+    LEFT JOIN places p ON p.created_by = u.id
+    LEFT JOIN photos ph ON ph.uploaded_by = u.id
+    GROUP BY u.id
+    ORDER BY u.id
+  `);
   res.json(rows);
 });
 
@@ -280,6 +352,31 @@ app.patch('/api/admin/users/:id/role', requireRole('admin'), async (req, res) =>
   if (!['visiteur', 'editeur', 'admin'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
   await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, req.params.id]);
   res.json({ message: 'Role updated' });
+});
+
+app.patch('/api/admin/users/:id/ban', requireRole('admin'), async (req, res) => {
+  if (parseInt(req.params.id) === req.user.id) return res.status(400).json({ error: 'Cannot ban yourself' });
+  const { banned } = req.body;
+  await pool.query('UPDATE users SET banned = $1 WHERE id = $2', [banned, req.params.id]);
+  res.json({ message: 'Updated' });
+});
+
+app.get('/api/admin/groups', requireRole('admin'), async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT g.*,
+      (SELECT json_agg(json_build_object('id', u.id, 'username', u.username))
+       FROM group_members gm JOIN users u ON gm.user_id = u.id
+       WHERE gm.group_id = g.id) as members,
+      (SELECT username FROM users WHERE id = g.created_by) as creator_name
+    FROM groups g ORDER BY g.created_at DESC
+  `);
+  res.json(rows);
+});
+
+app.delete('/api/admin/groups/:id', requireRole('admin'), async (req, res) => {
+  await pool.query('DELETE FROM group_members WHERE group_id = $1', [req.params.id]);
+  await pool.query('DELETE FROM groups WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Group deleted' });
 });
 
 if (process.env.NODE_ENV !== 'production') {
