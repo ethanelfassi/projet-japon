@@ -77,7 +77,7 @@ function App() {
       case 'groups':
         return guardAuth(<GroupsManager user={user} />);
       case 'schedule':
-        return guardAuth(<Schedule user={user} />);
+        return (user?.role === 'editeur' || user?.role === 'admin') ? <Schedule user={user} /> : guardAuth(<></>);
       case 'admin':
         return user?.role === 'admin' ? <AdminPanel currentUser={user} /> : guardAuth(<></>);
       default:

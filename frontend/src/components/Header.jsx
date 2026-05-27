@@ -14,7 +14,9 @@ const Header = ({ activeTab, setActiveTab, user, onLogout }) => {
           <NavButton active={activeTab === 'places'} onClick={() => setActiveTab('places')} icon={<MapPin size={20} />} label="Liste" />
           <NavButton active={activeTab === 'album'} onClick={() => setActiveTab('album')} icon={<Camera size={20} />} label="Album" />
           <NavButton active={activeTab === 'map'} onClick={() => setActiveTab('map')} icon={<Compass size={20} />} label="Carte" />
-          <NavButton active={activeTab === 'schedule'} onClick={() => setActiveTab('schedule')} icon={<CalendarDays size={20} />} label="Planning" />
+          {(user.role === 'editeur' || user.role === 'admin') && (
+            <NavButton active={activeTab === 'schedule'} onClick={() => setActiveTab('schedule')} icon={<CalendarDays size={20} />} label="Planning" />
+          )}
           <NavButton active={activeTab === 'groups'} onClick={() => setActiveTab('groups')} icon={<Users size={20} />} label="Groupes" />
           {user.role === 'admin' && (
             <NavButton active={activeTab === 'admin'} onClick={() => setActiveTab('admin')} icon={<Shield size={20} />} label="Admin" />
