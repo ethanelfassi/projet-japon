@@ -219,6 +219,59 @@ app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) 
   res.json({ message: 'Photo deleted successfully' });
 });
 
+// --- Photo Comments ---
+app.get('/api/photo-comments', async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT pc.*, u.username
+      FROM photo_comments pc
+      JOIN users u ON pc.user_id = u.id
+      ORDER BY pc.created_at ASC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Database error fetching comments' });
+  }
+});
+
+app.post('/api/photo-comments/:photo_id', requireAuth, async (req, res) => {
+  const { text } = req.body;
+  const { photo_id } = req.params;
+  if (!text || text.trim() === '') {
+    return res.status(400).json({ error: 'Comment text is required' });
+  }
+  try {
+    const parsedPhotoId = parseInt(photo_id, 10);
+    const { rows } = await pool.query(
+      'INSERT INTO photo_comments (photo_id, user_id, text) VALUES ($1, $2, $3) RETURNING id, photo_id, user_id, text, created_at',
+      [parsedPhotoId, req.user.id, text]
+    );
+    res.json({
+      ...rows[0],
+      username: req.user.username
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error adding comment' });
+  }
+});
+
+app.delete('/api/photo-comments/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query('SELECT user_id FROM photo_comments WHERE id = $1', [id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Comment not found' });
+    
+    if (req.user.role !== 'admin' && rows[0].user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    await pool.query('DELETE FROM photo_comments WHERE id = $1', [id]);
+    res.json({ message: 'Comment deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error deleting comment' });
+  }
+});
+
 // --- Admin ---
 app.get('/api/admin/users', requireRole('admin'), async (req, res) => {
   const { rows } = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id');
