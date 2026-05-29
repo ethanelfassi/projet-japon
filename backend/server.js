@@ -61,7 +61,11 @@ app.use(authenticateToken);
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: { folder: 'projet-japon', allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+  params: { 
+    folder: 'projet-japon', 
+    resource_type: 'auto',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv'] 
+  },
 });
 const upload = multer({ storage });
 
@@ -194,8 +198,9 @@ app.post('/api/groups/:id/leave', requireAuth, async (req, res) => {
 
 // --- Places ---
 app.get('/api/places', requireAuth, async (req, res) => {
+  const photoSub = `(SELECT url FROM photos WHERE place_id = p.id ORDER BY created_at ASC LIMIT 1) as first_photo_url`;
   const result = await pool.query(`
-    SELECT DISTINCT p.*, g.name AS group_name, g.color AS group_color FROM places p
+    SELECT DISTINCT p.*, g.name AS group_name, g.color AS group_color, ${photoSub} FROM places p
     LEFT JOIN group_members gm ON p.group_id = gm.group_id
     LEFT JOIN groups g ON p.group_id = g.id
     WHERE p.visibility = 'public'
@@ -219,9 +224,59 @@ app.post('/api/places', requireRole('editeur', 'admin'), async (req, res) => {
 });
 
 app.patch('/api/places/:id', requireRole('editeur', 'admin'), async (req, res) => {
-  const { status } = req.body;
-  await pool.query('UPDATE places SET status = $1 WHERE id = $2', [status, req.params.id]);
-  res.json({ message: 'Status updated' });
+  const { name, description, status } = req.body;
+  const placeId = req.params.id;
+
+  try {
+    const { rows: placeRows } = await pool.query('SELECT * FROM places WHERE id = $1', [placeId]);
+    if (!placeRows[0]) return res.status(404).json({ error: 'Place not found' });
+    const place = placeRows[0];
+
+    if (req.user.role !== 'admin') {
+      if (place.visibility === 'private') {
+        if (place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: Private place' });
+        }
+      } else if (place.visibility === 'group') {
+        const { rows: memberRows } = await pool.query(
+          'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+          [place.group_id, req.user.id]
+        );
+        if (memberRows.length === 0 && place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: You are not a member of the group sharing this place' });
+        }
+      }
+    }
+
+    const updates = [];
+    const values = [];
+    let paramIdx = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramIdx++}`);
+      values.push(name);
+    }
+    if (description !== undefined) {
+      updates.push(`description = $${paramIdx++}`);
+      values.push(description);
+    }
+    if (status !== undefined) {
+      updates.push(`status = $${paramIdx++}`);
+      values.push(status);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(placeId);
+    const query = `UPDATE places SET ${updates.join(', ')} WHERE id = $${paramIdx}`;
+    
+    await pool.query(query, values);
+    res.json({ message: 'Place updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/places/:id', requireRole('admin'), async (req, res) => {
@@ -254,12 +309,13 @@ app.post('/api/photos', requireRole('editeur', 'admin'), upload.single('photo'),
   const publicId = req.file.filename;
   const isStampInt = is_stamp === 'true' || is_stamp === 1 ? 1 : 0;
   const style = stamp_style || 'classic';
+  const mediaType = req.file.mimetype && req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
   try {
     const { rows } = await pool.query(
-      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id, uploaded_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-      [place_id, url, caption, isStampInt, style, publicId, req.user.id]
+      'INSERT INTO photos (place_id, url, caption, is_stamp, stamp_style, cloudinary_id, media_type, uploaded_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
+      [place_id, url, caption, isStampInt, style, publicId, mediaType, req.user.id]
     );
-    res.json({ id: rows[0].id, place_id, url, caption, is_stamp: isStampInt, stamp_style: style });
+    res.json({ id: rows[0].id, place_id, url, caption, is_stamp: isStampInt, stamp_style: style, media_type: mediaType, uploaded_by: req.user.id });
   } catch (err) {
     res.status(500).json({ error: 'Database error' });
   }
@@ -272,21 +328,83 @@ app.get('/api/photos/:place_id', requireAuth, async (req, res) => {
 
 app.get('/api/photos', requireAuth, async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT photos.*, places.name as place_name, places.location as place_location
+    SELECT photos.*, places.name as place_name, places.location as place_location,
+           places.visibility as place_visibility, places.created_by as place_created_by, places.group_id as place_group_id
     FROM photos JOIN places ON photos.place_id = places.id
     ORDER BY photos.created_at DESC
   `);
   res.json(rows);
 });
 
-app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) => {
-  const { rows } = await pool.query('SELECT cloudinary_id FROM photos WHERE id = $1', [req.params.id]);
-  if (!rows[0]) return res.status(404).json({ error: 'Photo not found' });
-  if (rows[0].cloudinary_id) {
-    try { await cloudinary.uploader.destroy(rows[0].cloudinary_id); } catch (err) { console.error(err); }
+app.patch('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) => {
+  const { caption } = req.body;
+  const photoId = req.params.id;
+  try {
+    const { rows: photoRows } = await pool.query('SELECT place_id FROM photos WHERE id = $1', [photoId]);
+    if (!photoRows[0]) return res.status(404).json({ error: 'Photo not found' });
+    const photo = photoRows[0];
+
+    const { rows: placeRows } = await pool.query('SELECT * FROM places WHERE id = $1', [photo.place_id]);
+    if (!placeRows[0]) return res.status(404).json({ error: 'Place not found' });
+    const place = placeRows[0];
+
+    if (req.user.role !== 'admin') {
+      if (place.visibility === 'private') {
+        if (place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: Private place' });
+        }
+      } else if (place.visibility === 'group') {
+        const { rows: memberRows } = await pool.query(
+          'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+          [place.group_id, req.user.id]
+        );
+        if (memberRows.length === 0 && place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: You are not a member of the group sharing this place' });
+        }
+      }
+    }
+
+    await pool.query('UPDATE photos SET caption = $1 WHERE id = $2', [caption, photoId]);
+    res.json({ message: 'Photo caption updated successfully', id: photoId, caption });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  await pool.query('DELETE FROM photos WHERE id = $1', [req.params.id]);
-  res.json({ message: 'Photo deleted successfully' });
+});
+
+app.delete('/api/photos/:id', requireRole('editeur', 'admin'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT cloudinary_id, place_id FROM photos WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Photo not found' });
+    const photo = rows[0];
+
+    const { rows: placeRows } = await pool.query('SELECT * FROM places WHERE id = $1', [photo.place_id]);
+    if (!placeRows[0]) return res.status(404).json({ error: 'Place not found' });
+    const place = placeRows[0];
+
+    if (req.user.role !== 'admin') {
+      if (place.visibility === 'private') {
+        if (place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: Private place' });
+        }
+      } else if (place.visibility === 'group') {
+        const { rows: memberRows } = await pool.query(
+          'SELECT 1 FROM group_members WHERE group_id = $1 AND user_id = $2',
+          [place.group_id, req.user.id]
+        );
+        if (memberRows.length === 0 && place.created_by !== req.user.id) {
+          return res.status(403).json({ error: 'Forbidden: You are not a member of the group sharing this place' });
+        }
+      }
+    }
+
+    if (photo.cloudinary_id) {
+      try { await cloudinary.uploader.destroy(photo.cloudinary_id); } catch (err) { console.error(err); }
+    }
+    await pool.query('DELETE FROM photos WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Photo deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- Photo Comments ---
@@ -316,10 +434,7 @@ app.post('/api/photo-comments/:photo_id', requireAuth, async (req, res) => {
       'INSERT INTO photo_comments (photo_id, user_id, text) VALUES ($1, $2, $3) RETURNING id, photo_id, user_id, text, created_at',
       [parsedPhotoId, req.user.id, text]
     );
-    res.json({
-      ...rows[0],
-      username: req.user.username
-    });
+    res.json({ ...rows[0], username: req.user.username });
   } catch (err) {
     res.status(500).json({ error: 'Database error adding comment' });
   }
@@ -330,16 +445,37 @@ app.delete('/api/photo-comments/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { rows } = await pool.query('SELECT user_id FROM photo_comments WHERE id = $1', [id]);
     if (!rows[0]) return res.status(404).json({ error: 'Comment not found' });
-    
-    if (req.user.role !== 'admin' && rows[0].user_id !== req.user.id) {
-      return res.status(403).json({ error: 'Unauthorized' });
-    }
-    
+    if (req.user.role !== 'admin' && rows[0].user_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
     await pool.query('DELETE FROM photo_comments WHERE id = $1', [id]);
     res.json({ message: 'Comment deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Database error deleting comment' });
   }
+});
+
+// --- Itinerary ---
+app.get('/api/itinerary', requireAuth, async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT i.*, p.name as place_name, p.location as place_location
+    FROM itinerary i
+    LEFT JOIN places p ON i.place_id = p.id
+    ORDER BY i.date ASC, i.time_start ASC
+  `);
+  res.json(rows);
+});
+
+app.post('/api/itinerary', requireRole('editeur', 'admin'), async (req, res) => {
+  const { date, title, description, time_start, time_end, place_id } = req.body;
+  const { rows } = await pool.query(
+    'INSERT INTO itinerary (date, title, description, time_start, time_end, place_id, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
+    [date, title, description, time_start || null, time_end || null, place_id || null, req.user.id]
+  );
+  res.json(rows[0]);
+});
+
+app.delete('/api/itinerary/:id', requireRole('editeur', 'admin'), async (req, res) => {
+  await pool.query('DELETE FROM itinerary WHERE id = $1', [req.params.id]);
+  res.json({ message: 'Deleted' });
 });
 
 // --- Admin ---
