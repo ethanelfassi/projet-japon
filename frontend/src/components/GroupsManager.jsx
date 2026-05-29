@@ -211,7 +211,7 @@ const GroupsManager = ({ user }) => {
       )}
 
       {/* Other groups to join */}
-      {otherGroups.length > 0 && (
+      {isAdmin && otherGroups.length > 0 && (
         <div>
           <h4 style={{ color: 'var(--text-muted)', marginBottom: '14px', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Rejoindre un groupe ({otherGroups.length})</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

@@ -10,6 +10,7 @@ import Auth from './components/Auth';
 import GroupsManager from './components/GroupsManager';
 import AdminPanel from './components/AdminPanel';
 import Schedule from './components/Schedule';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import './App.css';
 
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
@@ -31,6 +32,7 @@ function App() {
   // Auth state
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [showChangePwd, setShowChangePwd] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -93,6 +95,22 @@ function App() {
     <div className="App">
       <Header activeTab={activeTab} setActiveTab={setActiveTab} user={user} onLogout={handleLogout} />
       
+      {user && (
+        <div className="glass profile-widget">
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00ff7f' }} />
+            {user.username}
+          </span>
+          <button 
+            onClick={() => setShowChangePwd(true)}
+            className="btn-glass"
+            style={{ padding: '5px 10px', fontSize: '0.75rem', borderRadius: '8px' }}
+          >
+            Mdp
+          </button>
+        </div>
+      )}
+
       <main>
         {renderContent()}
       </main>
@@ -104,6 +122,12 @@ function App() {
           onUploadSuccess={() => {
             setActiveTab('album');
           }}
+        />
+      )}
+
+      {showChangePwd && (
+        <ChangePasswordModal 
+          onClose={() => setShowChangePwd(false)} 
         />
       )}
 

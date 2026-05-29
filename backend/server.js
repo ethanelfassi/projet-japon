@@ -168,8 +168,7 @@ app.post('/api/groups/:id/members', requireAuth, async (req, res) => {
   const { userId } = req.body;
   const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
-  const isSelf = parseInt(userId) === req.user.id;
-  if (!isSelf && rows[0].created_by !== req.user.id && req.user.role !== 'admin') {
+  if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Forbidden' });
   }
   await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.params.id, userId]);
@@ -515,6 +514,43 @@ app.delete('/api/admin/groups/:id', requireRole('admin'), async (req, res) => {
   await pool.query('DELETE FROM group_members WHERE group_id = $1', [req.params.id]);
   await pool.query('DELETE FROM groups WHERE id = $1', [req.params.id]);
   res.json({ message: 'Group deleted' });
+});
+
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) return res.status(400).json({ error: 'Tous les champs sont requis' });
+    
+    const { rows } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    
+    const valid = await bcrypt.compare(oldPassword, rows[0].password_hash);
+    if (!valid) return res.status(400).json({ error: 'Ancien mot de passe incorrect' });
+    
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashed, req.user.id]);
+    res.json({ message: 'Mot de passe modifié avec succès' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/users', requireRole('admin'), async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    if (!username || !password || !role) return res.status(400).json({ error: 'Tous les champs sont requis' });
+    if (!['visiteur', 'editeur', 'admin'].includes(role)) return res.status(400).json({ error: 'Rôle invalide' });
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { rows } = await pool.query(
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role',
+      [username, hashedPassword, role]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Nom d\'utilisateur déjà pris' });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 if (process.env.NODE_ENV !== 'production') {

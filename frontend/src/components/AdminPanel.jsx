@@ -14,7 +14,44 @@ const AdminPanel = ({ currentUser }) => {
   const [addMemberGroupId, setAddMemberGroupId] = useState(null);
   const [addMemberUserId, setAddMemberUserId] = useState('');
 
+  // User creation form states
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('visiteur');
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createSuccess, setCreateSuccess] = useState('');
+
   useEffect(() => { fetchUsers(); fetchGroups(); fetchAllUsers(); }, []);
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setCreateError('');
+    setCreateSuccess('');
+    setCreatingUser(true);
+    try {
+      await axios.post('/api/admin/users', {
+        username: newUsername,
+        password: newPassword,
+        role: newRole
+      });
+      setCreateSuccess('Utilisateur créé avec succès !');
+      setNewUsername('');
+      setNewPassword('');
+      setNewRole('visiteur');
+      fetchUsers();
+      fetchAllUsers();
+      setTimeout(() => {
+        setShowCreateForm(false);
+        setCreateSuccess('');
+      }, 1500);
+    } catch (err) {
+      setCreateError(err.response?.data?.error || 'Erreur lors de la création');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
 
   const fetchUsers = async () => {
     try { const res = await axios.get('/api/admin/users'); setUsers(res.data); } catch (err) { console.error(err); }
@@ -85,6 +122,83 @@ const AdminPanel = ({ currentUser }) => {
       {/* USERS TAB */}
       {tab === 'users' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+            <button 
+              onClick={() => setShowCreateForm(!showCreateForm)} 
+              className="btn-primary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', padding: '10px 20px' }}
+            >
+              <Plus size={16} /> Créer un utilisateur
+            </button>
+          </div>
+
+          {showCreateForm && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="glass" 
+              style={{ padding: '25px', borderRadius: '16px', marginBottom: '20px', borderLeft: '4px solid var(--primary)' }}
+            >
+              <h4 style={{ marginBottom: '15px' }}>Nouvel utilisateur</h4>
+              {createError && (
+                <div style={{ background: 'rgba(255, 77, 109, 0.15)', color: '#ff4d6d', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '15px' }}>
+                  {createError}
+                </div>
+              )}
+              {createSuccess && (
+                <div style={{ background: 'rgba(0, 255, 127, 0.15)', color: '#00ff7f', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '15px' }}>
+                  {createSuccess}
+                </div>
+              )}
+              <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '150px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Nom d'utilisateur" 
+                      className="glass"
+                      style={{ width: '100%', padding: '10px 15px', color: 'white', boxSizing: 'border-box', borderRadius: '10px' }}
+                      value={newUsername}
+                      onChange={e => setNewUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: '150px' }}>
+                    <input 
+                      type="password" 
+                      placeholder="Mot de passe" 
+                      className="glass"
+                      style={{ width: '100%', padding: '10px 15px', color: 'white', boxSizing: 'border-box', borderRadius: '10px' }}
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div style={{ minWidth: '150px' }}>
+                    <select 
+                      className="glass" 
+                      style={{ width: '100%', padding: '10px 15px', color: 'white', background: 'none', boxSizing: 'border-box', borderRadius: '10px' }}
+                      value={newRole}
+                      onChange={e => setNewRole(e.target.value)}
+                    >
+                      <option value="visiteur" style={{ color: 'black' }}>Visiteur</option>
+                      <option value="editeur" style={{ color: 'black' }}>Editeur</option>
+                      <option value="admin" style={{ color: 'black' }}>Admin</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button type="submit" className="btn-primary" style={{ padding: '8px 20px', fontSize: '0.85rem' }} disabled={creatingUser}>
+                    {creatingUser ? 'Création...' : 'Créer'}
+                  </button>
+                  <button type="button" onClick={() => setShowCreateForm(false)} className="btn-glass" style={{ padding: '8px 20px', fontSize: '0.85rem' }}>
+                    Annuler
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+
           {users.map((u, i) => (
             <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
               className="glass" style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', opacity: u.banned ? 0.5 : 1 }}

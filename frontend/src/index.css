@@ -674,3 +674,32 @@ button {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
 }
+
+.profile-widget {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  z-index: 1001;
+  padding: 8px 16px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 1024px) {
+  .profile-widget {
+    position: fixed;
+    top: auto;
+    bottom: 20px;
+    left: 20px;
+    right: auto;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.2);
+  }
+}
+
