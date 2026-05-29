@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Users } from 'lucide-react';
 
 const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user }) => {
   const [photos, setPhotos] = useState([]);
@@ -119,11 +119,27 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
         </button>
 
         <div style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', marginBottom: '10px', flexWrap: 'wrap' }}>
             {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
             <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
               {place.type === 'activity' ? 'Activité' : 'Lieu'}
             </span>
+            {place.visibility === 'group' && (
+              <span style={{
+                fontSize: '0.8rem',
+                background: 'rgba(155, 89, 182, 0.2)',
+                color: '#d580ff',
+                padding: '4px 10px',
+                borderRadius: '20px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                marginLeft: '10px'
+              }}>
+                <Users size={12} /> Groupe : {place.group_name}
+              </span>
+            )}
           </div>
           <h2 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>{place.name}</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>{place.description}</p>

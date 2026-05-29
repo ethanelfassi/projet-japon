@@ -188,8 +188,9 @@ app.post('/api/groups/:id/leave', requireAuth, async (req, res) => {
 // --- Places ---
 app.get('/api/places', requireAuth, async (req, res) => {
   const result = await pool.query(`
-    SELECT DISTINCT p.* FROM places p
+    SELECT DISTINCT p.*, g.name AS group_name FROM places p
     LEFT JOIN group_members gm ON p.group_id = gm.group_id
+    LEFT JOIN groups g ON p.group_id = g.id
     WHERE p.visibility = 'public'
        OR p.created_by = $1
        OR (p.visibility = 'group' AND gm.user_id = $2)

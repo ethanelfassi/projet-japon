@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
-import { MapPin, Zap, Compass } from 'lucide-react';
+import { MapPin, Zap, Compass, Users } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import PlaceDetailsModal from './PlaceDetailsModal';
 
@@ -64,11 +64,18 @@ const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
               <Marker key={place.id} position={[place.lat, place.lng]}>
                 <Popup>
                   <div className="map-popup-card">
-                    <div className="map-popup-header">
-                      <span className={`map-popup-badge ${place.type}`}>
-                        {place.type === 'activity' ? <Zap size={10} style={{ color: 'var(--accent)' }} /> : <MapPin size={10} style={{ color: 'var(--secondary)' }} />}
-                        {place.type === 'activity' ? 'Activité' : 'Lieu'}
-                      </span>
+                    <div className="map-popup-header" style={{ flexWrap: 'wrap', gap: '4px' }}>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        <span className={`map-popup-badge ${place.type}`}>
+                          {place.type === 'activity' ? <Zap size={10} style={{ color: 'var(--accent)' }} /> : <MapPin size={10} style={{ color: 'var(--secondary)' }} />}
+                          {place.type === 'activity' ? 'Activité' : 'Lieu'}
+                        </span>
+                        {place.visibility === 'group' && (
+                          <span className="map-popup-badge group" style={{ background: 'rgba(155, 89, 182, 0.15)', color: '#d580ff', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <Users size={10} /> {place.group_name}
+                          </span>
+                        )}
+                      </div>
                       <span className={`map-popup-status ${place.status}`}>
                         {place.status === 'visited' ? 'Visité' : 'À faire'}
                       </span>

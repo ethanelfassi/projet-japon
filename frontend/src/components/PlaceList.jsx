@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CheckCircle, Circle, MapPin, Camera, Zap, Compass, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Circle, MapPin, Camera, Zap, Compass, Trash2, Users } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -275,7 +275,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                 onClick={() => setSelectedPlaceDetails(place)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{
                       fontSize: '0.7rem',
                       background: place.type === 'activity' ? 'rgba(254, 228, 64, 0.2)' : 'rgba(67, 97, 238, 0.2)',
@@ -297,6 +297,21 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     }}>
                       {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
                     </span>
+                    {place.visibility === 'group' && (
+                      <span style={{
+                        fontSize: '0.8rem',
+                        background: 'rgba(155, 89, 182, 0.2)',
+                        color: '#d580ff',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <Users size={12} /> Groupe : {place.group_name || 'Chargement...'}
+                      </span>
+                    )}
                   </div>
                   {(user?.role === 'editeur' || user?.role === 'admin') && (
                     <button
