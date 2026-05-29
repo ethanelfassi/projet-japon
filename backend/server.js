@@ -287,7 +287,7 @@ app.put('/api/places/:id', requireRole('admin'), async (req, res) => {
   res.json({ message: 'Place updated' });
 });
 
-app.delete('/api/places/:id', requireRole('admin'), async (req, res) => {
+app.delete('/api/places/:id', requireRole('editeur', 'admin'), async (req, res) => {
   const { rows } = await pool.query('SELECT cloudinary_id FROM photos WHERE place_id = $1', [req.params.id]);
   for (const photo of rows) {
     if (photo.cloudinary_id) {

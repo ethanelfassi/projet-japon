@@ -134,6 +134,18 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
     }
   };
 
+  const handleDeletePlace = async (e, id) => {
+    e.stopPropagation();
+    if (!confirm('Voulez-vous vraiment supprimer cette tâche ?')) return;
+    try {
+      await axios.delete(`/api/places/${id}`);
+      fetchPlaces();
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de la suppression de la tâche');
+    }
+  };
+
   // Group places by location
   const groupedPlaces = places.reduce((acc, place) => {
     const loc = place.location || 'Ailleurs';
@@ -338,12 +350,21 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     )}
                   </div>
                   {(user?.role === 'editeur' || user?.role === 'admin') && (
-                    <button
-                      onClick={(e) => toggleStatus(e, place.id, place.status)}
-                      style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer' }}
-                    >
-                      {place.status === 'visited' ? <CheckCircle size={24} /> : <Circle size={24} />}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => toggleStatus(e, place.id, place.status)}
+                        style={{ background: 'none', padding: 0, color: place.status === 'visited' ? '#00ff7f' : 'var(--text-muted)', cursor: 'pointer', display: 'flex' }}
+                      >
+                        {place.status === 'visited' ? <CheckCircle size={22} /> : <Circle size={22} />}
+                      </button>
+                      <button
+                        onClick={(e) => handleDeletePlace(e, place.id)}
+                        style={{ background: 'none', padding: 0, color: '#ff4d6d', cursor: 'pointer', display: 'flex' }}
+                        title="Supprimer la tâche"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   )}
                 </div>
 
