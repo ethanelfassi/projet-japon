@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Users, Pencil, Check, X } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Users, Pencil, Check, X, Download } from 'lucide-react';
 import { getGroupColor } from './PlaceList';
+
+const getDownloadUrl = (url) => {
+  if (!url) return '';
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+  return url;
+};
 
 const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, onPlaceUpdated }) => {
   const [photos, setPhotos] = useState([]);
@@ -308,9 +316,38 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
             <div className="details-grid">
               {photos.map(photo => (
                 <div key={photo.id} className="details-photo-container photo-card">
-                  <button className="delete-btn" onClick={() => setConfirmDeleteId(photo.id)}>
-                    <Trash2 size={14} />
-                  </button>
+                  <a
+                    href={getDownloadUrl(photo.url)}
+                    className="download-btn"
+                    style={{ 
+                      right: (user?.role === 'editeur' || user?.role === 'admin') ? '52px' : '12px',
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '8px'
+                    }}
+                    title="Télécharger le souvenir"
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download size={12} />
+                  </a>
+
+                  {(user?.role === 'editeur' || user?.role === 'admin') && (
+                    <button 
+                      className="delete-btn" 
+                      onClick={() => setConfirmDeleteId(photo.id)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '8px',
+                        right: '12px'
+                      }}
+                      title="Supprimer la photo"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  )}
                   
                   <AnimatePresence>
                     {confirmDeleteId === photo.id && (

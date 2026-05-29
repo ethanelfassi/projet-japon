@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2, MessageSquare, Pencil, Check, X } from 'lucide-react';
+import { MapPin, Calendar, Image as ImageIcon, Bookmark, Trash2, MessageSquare, Pencil, Check, X, Download } from 'lucide-react';
+
+const getDownloadUrl = (url) => {
+  if (!url) return '';
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', '/upload/fl_attachment/');
+  }
+  return url;
+};
 
 const PhotoAlbum = ({ user }) => {
   const [photos, setPhotos] = useState([]);
@@ -164,6 +172,18 @@ const PhotoAlbum = ({ user }) => {
                }}
                className={photo.is_stamp ? "photo-card" : "glass photo-card"}
              >
+               <a
+                 href={getDownloadUrl(photo.url)}
+                 className="download-btn"
+                 style={{ right: canEditPhoto(photo) ? '56px' : '12px' }}
+                 title="Télécharger le souvenir"
+                 download
+                 target="_blank"
+                 rel="noopener noreferrer"
+               >
+                 <Download size={16} />
+               </a>
+
                {canEditPhoto(photo) && (
                  <button
                    className="delete-btn"

@@ -37,7 +37,6 @@ const createPinIcon = (place) => {
     popupAnchor: [0, -64],
   });
 };
-
 const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
