@@ -425,6 +425,15 @@ button {
   transform: scale(1.1) rotate(-5deg);
 }
 
+@media (max-width: 768px), (hover: none) {
+  .photo-card .delete-btn,
+  .photo-card .download-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
 /* --- Photo Comments --- */
 .photo-comments-section {
   border-top: 1px solid var(--glass-border);
