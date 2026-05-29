@@ -152,7 +152,7 @@ button {
   top: 12px;
   right: 12px;
   background: rgba(255, 255, 255, 0.95);
-  color: #ff4d6d;
+  color: #ff3b30;
   border: none;
   border-radius: 12px;
   width: 36px;
@@ -174,7 +174,7 @@ button {
 }
 
 .delete-btn:hover {
-  background: #ff4d6d;
+  background: #ff3b30;
   color: white;
   transform: scale(1.1) rotate(5deg);
 }

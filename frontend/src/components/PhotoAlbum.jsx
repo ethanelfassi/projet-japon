@@ -190,7 +190,7 @@ const PhotoAlbum = ({ user }) => {
                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(photo.id); }}
                    title="Supprimer la photo"
                  >
-                   <Trash2 size={16} />
+                   <X size={18} strokeWidth={2.5} />
                  </button>
                )}
 
