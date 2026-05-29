@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Users } from 'lucide-react';
+import { getGroupColor } from './PlaceList';
 
 const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user }) => {
   const [photos, setPhotos] = useState([]);
@@ -127,8 +128,8 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
             {place.visibility === 'group' && (
               <span style={{
                 fontSize: '0.8rem',
-                background: 'rgba(155, 89, 182, 0.2)',
-                color: '#d580ff',
+                background: getGroupColor(place.group_id).bg,
+                color: getGroupColor(place.group_id).text,
                 padding: '4px 10px',
                 borderRadius: '20px',
                 fontWeight: 600,

@@ -6,6 +6,7 @@ import L from 'leaflet';
 import { MapPin, Zap, Compass, Users } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import PlaceDetailsModal from './PlaceDetailsModal';
+import { getGroupColor } from './PlaceList';
 
 // Fix for default marker icons in Leaflet with Webpack/Vite
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -71,7 +72,7 @@ const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
                           {place.type === 'activity' ? 'Activité' : 'Lieu'}
                         </span>
                         {place.visibility === 'group' && (
-                          <span className="map-popup-badge group" style={{ background: 'rgba(155, 89, 182, 0.15)', color: '#d580ff', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <span className="map-popup-badge group" style={{ background: getGroupColor(place.group_id).bg, color: getGroupColor(place.group_id).text, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                             <Users size={10} /> {place.group_name}
                           </span>
                         )}

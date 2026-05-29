@@ -20,6 +20,20 @@ const LocationPicker = ({ onLocationSelect, initialPos }) => {
   return position ? <Marker position={position} /> : null;
 };
 
+export const getGroupColor = (groupId) => {
+  const colors = [
+    { bg: 'rgba(155, 89, 182, 0.2)', text: '#d580ff' }, // Purple
+    { bg: 'rgba(26, 188, 156, 0.2)', text: '#4effd7' },  // Teal
+    { bg: 'rgba(230, 126, 34, 0.2)', text: '#ff9f43' },  // Orange
+    { bg: 'rgba(52, 152, 219, 0.2)', text: '#54a0ff' },  // Blue
+    { bg: 'rgba(46, 204, 113, 0.2)', text: '#2ecc71' },  // Green
+    { bg: 'rgba(233, 30, 99, 0.2)', text: '#ff758f' }    // Pink
+  ];
+  if (!groupId) return colors[0];
+  const index = Math.abs(parseInt(groupId, 10)) % colors.length;
+  return colors[isNaN(index) ? 0 : index];
+};
+
 const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, user }) => {
   const [places, setPlaces] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
@@ -300,8 +314,8 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     {place.visibility === 'group' && (
                       <span style={{
                         fontSize: '0.8rem',
-                        background: 'rgba(155, 89, 182, 0.2)',
-                        color: '#d580ff',
+                        background: getGroupColor(place.group_id).bg,
+                        color: getGroupColor(place.group_id).text,
                         padding: '4px 10px',
                         borderRadius: '20px',
                         fontWeight: 600,
