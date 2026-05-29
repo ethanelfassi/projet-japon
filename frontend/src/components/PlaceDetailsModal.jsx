@@ -128,8 +128,8 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user })
             {place.visibility === 'group' && (
               <span style={{
                 fontSize: '0.8rem',
-                background: getGroupColor(place.group_id).bg,
-                color: getGroupColor(place.group_id).text,
+                background: getGroupColor(place.group_id, place.group_color).bg,
+                color: getGroupColor(place.group_id, place.group_color).text,
                 padding: '4px 10px',
                 borderRadius: '20px',
                 fontWeight: 600,

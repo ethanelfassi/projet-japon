@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users, Plus, UserPlus, Trash2, LogOut, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getGroupColor, GROUP_COLORS } from './PlaceList';
 
 const GroupsManager = ({ user }) => {
   const [groups, setGroups] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupColor, setNewGroupColor] = useState('purple');
   const [creating, setCreating] = useState(false);
   const [addMemberGroupId, setAddMemberGroupId] = useState(null);
   const [addMemberUserId, setAddMemberUserId] = useState('');
@@ -28,11 +30,19 @@ const GroupsManager = ({ user }) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
     try {
-      await axios.post('/api/groups', { name: newGroupName });
+      await axios.post('/api/groups', { name: newGroupName, color: newGroupColor });
       setNewGroupName('');
+      setNewGroupColor('purple');
       setCreating(false);
       fetchData();
     } catch { alert('Erreur lors de la création'); }
+  };
+
+  const changeGroupColor = async (groupId, color) => {
+    try {
+      await axios.patch(`/api/groups/${groupId}`, { color });
+      fetchData();
+    } catch { alert('Erreur lors du changement de couleur'); }
   };
 
   const joinGroup = async (groupId) => {
@@ -105,15 +115,43 @@ const GroupsManager = ({ user }) => {
       <AnimatePresence>
         {creating && (
           <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
-            className="glass" style={{ padding: '24px', borderRadius: '16px', marginBottom: '28px', borderLeft: '4px solid var(--primary)' }}
+            className="glass" style={{ padding: '24px', borderRadius: '16px', marginBottom: '28px', borderLeft: `4px solid ${GROUP_COLORS[newGroupColor].border}` }}
           >
-            <form onSubmit={createGroup} style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input type="text" placeholder="Nom du groupe..." className="glass"
-                style={{ flex: 1, minWidth: '200px', padding: '12px 16px', color: 'white', borderRadius: '10px' }}
-                value={newGroupName} onChange={e => setNewGroupName(e.target.value)} required autoFocus
-              />
-              <button type="submit" className="btn-primary" style={{ padding: '12px 24px' }}>Créer</button>
-              <button type="button" onClick={() => setCreating(false)} className="btn-glass" style={{ padding: '12px 14px' }}><X size={16} /></button>
+            <form onSubmit={createGroup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <input type="text" placeholder="Nom du groupe..." className="glass"
+                  style={{ flex: 1, minWidth: '200px', padding: '12px 16px', color: 'white', borderRadius: '10px' }}
+                  value={newGroupName} onChange={e => setNewGroupName(e.target.value)} required autoFocus
+                />
+                <button type="submit" className="btn-primary" style={{ padding: '12px 24px' }}>Créer</button>
+                <button type="button" onClick={() => setCreating(false)} className="btn-glass" style={{ padding: '12px 14px' }}><X size={16} /></button>
+              </div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Couleur du groupe :</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {Object.entries(GROUP_COLORS).map(([key, col]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setNewGroupColor(key)}
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: col.border,
+                        border: newGroupColor === key ? '2px solid white' : '2px solid transparent',
+                        padding: 0,
+                        transform: newGroupColor === key ? 'scale(1.15)' : 'none',
+                        boxShadow: newGroupColor === key ? `0 0 10px ${col.border}` : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      title={col.label}
+                    />
+                  ))}
+                </div>
+              </div>
             </form>
           </motion.div>
         )}
@@ -126,7 +164,7 @@ const GroupsManager = ({ user }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {myGroups.map((g, i) => (
               <motion.div key={g.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="glass" style={{ padding: '20px 24px', borderRadius: '16px', borderLeft: '4px solid var(--primary)' }}
+                className="glass" style={{ padding: '20px 24px', borderRadius: '16px', borderLeft: `4px solid ${getGroupColor(g.id, g.color).border}` }}
               >
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
@@ -158,6 +196,33 @@ const GroupsManager = ({ user }) => {
                   {expandedGroups[g.id] && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden' }}>
                       <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        {canManageMembers(g) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Couleur du groupe :</span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              {Object.entries(GROUP_COLORS).map(([key, col]) => (
+                                <button
+                                  key={key}
+                                  type="button"
+                                  onClick={() => changeGroupColor(g.id, key)}
+                                  style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    borderRadius: '50%',
+                                    background: col.border,
+                                    border: (g.color || 'purple') === key ? '2px solid white' : '2px solid transparent',
+                                    padding: 0,
+                                    transform: (g.color || 'purple') === key ? 'scale(1.15)' : 'none',
+                                    boxShadow: (g.color || 'purple') === key ? `0 0 8px ${col.border}` : 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  title={col.label}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
                           {(g.members || []).map(m => (
                             <span key={m.id} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: '999px', padding: '4px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -217,7 +282,7 @@ const GroupsManager = ({ user }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {otherGroups.map((g, i) => (
               <motion.div key={g.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                className="glass" style={{ padding: '18px 24px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}
+                className="glass" style={{ padding: '18px 24px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderLeft: `4px solid ${getGroupColor(g.id, g.color).border}` }}
               >
                 <div>
                   <p style={{ fontWeight: 700, margin: 0 }}>{g.name}</p>

@@ -72,7 +72,7 @@ const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
                           {place.type === 'activity' ? 'Activité' : 'Lieu'}
                         </span>
                         {place.visibility === 'group' && (
-                          <span className="map-popup-badge group" style={{ background: getGroupColor(place.group_id).bg, color: getGroupColor(place.group_id).text, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <span className="map-popup-badge group" style={{ background: getGroupColor(place.group_id, place.group_color).bg, color: getGroupColor(place.group_id, place.group_color).text, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                             <Users size={10} /> {place.group_name}
                           </span>
                         )}
