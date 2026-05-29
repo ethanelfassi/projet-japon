@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CheckCircle, Circle, MapPin, Camera, Zap, Compass, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Circle, MapPin, Camera, Zap, Compass, Trash2, Users } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -18,6 +18,26 @@ const LocationPicker = ({ onLocationSelect, initialPos }) => {
   });
 
   return position ? <Marker position={position} /> : null;
+};
+
+export const GROUP_COLORS = {
+  purple: { label: 'Violet', bg: 'rgba(155, 89, 182, 0.2)', text: '#d580ff', border: '#9b59b6' },
+  teal: { label: 'Turquoise', bg: 'rgba(26, 188, 156, 0.2)', text: '#4effd7', border: '#1abc9c' },
+  orange: { label: 'Orange', bg: 'rgba(230, 126, 34, 0.2)', text: '#ff9f43', border: '#e67e22' },
+  blue: { label: 'Bleu', bg: 'rgba(52, 152, 219, 0.2)', text: '#54a0ff', border: '#3498db' },
+  green: { label: 'Vert', bg: 'rgba(46, 204, 113, 0.2)', text: '#2ecc71', border: '#2ecc71' },
+  pink: { label: 'Rose', bg: 'rgba(233, 30, 99, 0.2)', text: '#ff758f', border: '#e91e63' }
+};
+
+export const getGroupColor = (groupId, groupColorKey) => {
+  const colorsList = ['purple', 'teal', 'orange', 'blue', 'green', 'pink'];
+  const key = groupColorKey && GROUP_COLORS[groupColorKey] ? groupColorKey : null;
+  if (key) return GROUP_COLORS[key];
+  
+  if (!groupId) return GROUP_COLORS.purple;
+  const index = Math.abs(parseInt(groupId, 10)) % colorsList.length;
+  const fallbackKey = colorsList[isNaN(index) ? 0 : index];
+  return GROUP_COLORS[fallbackKey];
 };
 
 const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, user }) => {
@@ -275,7 +295,7 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                 onClick={() => setSelectedPlaceDetails(place)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{
                       fontSize: '0.7rem',
                       background: place.type === 'activity' ? 'rgba(254, 228, 64, 0.2)' : 'rgba(67, 97, 238, 0.2)',
@@ -297,6 +317,21 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
                     }}>
                       {place.status === 'visited' ? (place.type === 'activity' ? 'Fait' : 'Visité') : 'À faire'}
                     </span>
+                    {place.visibility === 'group' && (
+                      <span style={{
+                        fontSize: '0.8rem',
+                        background: getGroupColor(place.group_id, place.group_color).bg,
+                        color: getGroupColor(place.group_id, place.group_color).text,
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <Users size={12} /> Groupe : {place.group_name || 'Chargement...'}
+                      </span>
+                    )}
                   </div>
                   {(user?.role === 'editeur' || user?.role === 'admin') && (
                     <button

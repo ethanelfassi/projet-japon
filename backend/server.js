@@ -112,10 +112,10 @@ app.get('/api/users', requireAuth, async (req, res) => {
 // --- Groups ---
 app.post('/api/groups', requireRole('editeur', 'admin'), async (req, res) => {
   try {
-    const { name, members } = req.body;
+    const { name, members, color } = req.body;
     const { rows } = await pool.query(
-      'INSERT INTO groups (name, created_by) VALUES ($1, $2) RETURNING id',
-      [name, req.user.id]
+      'INSERT INTO groups (name, created_by, color) VALUES ($1, $2, $3) RETURNING id',
+      [name, req.user.id, color || 'purple']
     );
     const groupId = rows[0].id;
     await pool.query('INSERT INTO group_members (group_id, user_id) VALUES ($1, $2)', [groupId, req.user.id]);
@@ -156,11 +156,18 @@ app.delete('/api/groups/:id', requireAuth, async (req, res) => {
 });
 
 app.patch('/api/groups/:id', requireAuth, async (req, res) => {
-  const { name } = req.body;
+  const { name, color } = req.body;
   const { rows } = await pool.query('SELECT created_by FROM groups WHERE id = $1', [req.params.id]);
   if (!rows[0]) return res.status(404).json({ error: 'Group not found' });
   if (rows[0].created_by !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
-  await pool.query('UPDATE groups SET name = $1 WHERE id = $2', [name, req.params.id]);
+  
+  if (name !== undefined && color !== undefined) {
+    await pool.query('UPDATE groups SET name = $1, color = $2 WHERE id = $3', [name, color, req.params.id]);
+  } else if (name !== undefined) {
+    await pool.query('UPDATE groups SET name = $1 WHERE id = $2', [name, req.params.id]);
+  } else if (color !== undefined) {
+    await pool.query('UPDATE groups SET color = $1 WHERE id = $2', [color, req.params.id]);
+  }
   res.json({ message: 'Updated' });
 });
 
@@ -192,8 +199,9 @@ app.post('/api/groups/:id/leave', requireAuth, async (req, res) => {
 app.get('/api/places', requireAuth, async (req, res) => {
   const photoSub = `(SELECT url FROM photos WHERE place_id = p.id ORDER BY created_at ASC LIMIT 1) as first_photo_url`;
   const result = await pool.query(`
-    SELECT DISTINCT p.*, ${photoSub} FROM places p
+    SELECT DISTINCT p.*, g.name AS group_name, g.color AS group_color, ${photoSub} FROM places p
     LEFT JOIN group_members gm ON p.group_id = gm.group_id
+    LEFT JOIN groups g ON p.group_id = g.id
     WHERE p.visibility = 'public'
        OR p.created_by = $1
        OR (p.visibility = 'group' AND gm.user_id = $2)

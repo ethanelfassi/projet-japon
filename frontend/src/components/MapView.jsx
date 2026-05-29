@@ -3,9 +3,10 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
-import { MapPin, Zap, Compass, Camera } from 'lucide-react';
+import { MapPin, Zap, Compass, Users, Camera } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import PlaceDetailsModal from './PlaceDetailsModal';
+import { getGroupColor } from './PlaceList';
 
 const createPinIcon = (place) => {
   const img = place.first_photo_url
@@ -120,6 +121,16 @@ const MapView = ({ onPlaceClick, onAddPhoto, user }) => {
                         }}>
                           {place.status === 'visited' ? '✓ Visité' : '· À faire'}
                         </span>
+                        {place.visibility === 'group' && (
+                          <span style={{
+                            fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px',
+                            background: getGroupColor(place.group_id, place.group_color).bg,
+                            color: getGroupColor(place.group_id, place.group_color).text,
+                            display: 'inline-flex', alignItems: 'center', gap: '4px'
+                          }}>
+                            <Users size={9} /> {place.group_name}
+                          </span>
+                        )}
                       </div>
 
                       {place.location && (
