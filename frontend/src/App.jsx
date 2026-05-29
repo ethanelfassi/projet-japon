@@ -106,7 +106,7 @@ function App() {
             className="btn-glass"
             style={{ padding: '5px 10px', fontSize: '0.75rem', borderRadius: '8px' }}
           >
-            Mdp
+            Modifier le mot de passe
           </button>
         </div>
       )}
