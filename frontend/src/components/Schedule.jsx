@@ -71,9 +71,29 @@ const ItemCard = ({ item, canEdit, onDelete, style }) => {
       {canEdit && (
         <button
           onClick={e => { e.stopPropagation(); onDelete(item.id); }}
-          style={{ position: 'absolute', top: '3px', right: '3px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '1px' }}
+          className="schedule-delete-btn"
+          style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+            color: '#ff3b30',
+            padding: 0,
+            transition: 'all 0.2s ease',
+            zIndex: 10
+          }}
+          title="Supprimer"
         >
-          <Trash2 size={10} />
+          <X size={10} strokeWidth={3} />
         </button>
       )}
       <p style={{ fontWeight: 700, fontSize: '0.75rem', paddingRight: '14px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

@@ -675,3 +675,10 @@ button {
     overflow-y: visible;
   }
 }
+
+.schedule-delete-btn:hover {
+  background: #ff3b30 !important;
+  color: white !important;
+  transform: scale(1.15);
+}
+
