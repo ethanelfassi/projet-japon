@@ -59,6 +59,8 @@ app.use((req, res, next) => {
 
 app.use(authenticateToken);
 
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
 const storage = new CloudinaryStorage({
   cloudinary,
   params: { 
@@ -561,10 +563,11 @@ app.post('/api/admin/users', requireRole('admin'), async (req, res) => {
   }
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  initDb().then(() => {
-    app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
-  });
-}
+initDb().then(() => {
+  app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+}).catch(err => {
+  console.error('DB init failed:', err);
+  process.exit(1);
+});
 
 module.exports = app;
