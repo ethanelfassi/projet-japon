@@ -93,7 +93,7 @@ const ItemCard = ({ item, canEdit, onDelete, style }) => {
           }}
           title="Supprimer"
         >
-          <X size={10} strokeWidth={3} />
+          <Trash2 size={10} />
         </button>
       )}
       <p style={{ fontWeight: 700, fontSize: '0.75rem', paddingRight: '14px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

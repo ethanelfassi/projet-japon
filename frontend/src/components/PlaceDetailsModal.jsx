@@ -326,7 +326,7 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                       }}
                       title="Supprimer la photo"
                     >
-                      <X size={14} strokeWidth={2.5} />
+                      <Trash2 size={12} />
                     </button>
                   )}
                   
