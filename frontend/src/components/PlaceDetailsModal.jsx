@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Pencil, Check, X, Download } from 'lucide-react';
+import { Plus, Camera, MapPin, Zap, Trash2, MessageSquare, Calendar, Users, Pencil, Check, X, Download } from 'lucide-react';
+import { getGroupColor } from './PlaceList';
 
 const getDownloadUrl = (url) => {
   if (!url) return '';
@@ -202,11 +203,27 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
 
         <div style={{ marginBottom: '30px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', flexWrap: 'wrap' }}>
               {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
               <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
                 {place.type === 'activity' ? 'Activité' : 'Lieu'}
               </span>
+              {place.visibility === 'group' && (
+                <span style={{
+                  fontSize: '0.8rem',
+                  background: getGroupColor(place.group_id, place.group_color).bg,
+                  color: getGroupColor(place.group_id, place.group_color).text,
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  marginLeft: '10px'
+                }}>
+                  <Users size={12} /> Groupe : {place.group_name}
+                </span>
+              )}
             </div>
             
             {canEdit && !isEditing && (
@@ -280,9 +297,11 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Camera size={20} /> Souvenirs ({photos.length})
             </h3>
-            <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Plus size={16} /> Ajouter
-            </button>
+            {(user?.role === 'editeur' || user?.role === 'admin') && (
+              <button className="btn-glass" onClick={() => onAddPhoto(place)} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Plus size={16} /> Ajouter
+              </button>
+            )}
           </div>
           
           {loadingPhotos ? (

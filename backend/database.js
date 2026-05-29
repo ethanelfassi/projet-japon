@@ -32,6 +32,7 @@ const initDb = async () => {
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       created_by INTEGER NOT NULL REFERENCES users(id),
+      color TEXT DEFAULT 'purple',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -75,12 +76,25 @@ const initDb = async () => {
       text TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS itinerary (
+      id SERIAL PRIMARY KEY,
+      date DATE NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      time_start TEXT,
+      time_end TEXT,
+      place_id INTEGER REFERENCES places(id),
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   await pool.query(`ALTER TABLE photos ADD COLUMN IF NOT EXISTS media_type TEXT DEFAULT 'photo'`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'visiteur'`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS banned BOOLEAN DEFAULT false`);
   await pool.query(`ALTER TABLE photos ADD COLUMN IF NOT EXISTS uploaded_by INTEGER REFERENCES users(id)`);
+  await pool.query(`ALTER TABLE groups ADD COLUMN IF NOT EXISTS color TEXT DEFAULT 'purple'`);
 
   // Create default admin account if it doesn't exist
   const { rows: adminRows } = await pool.query(`SELECT id FROM users WHERE username = 'admin'`);
