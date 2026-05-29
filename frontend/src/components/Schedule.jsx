@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X, Clock, MapPin, Trash2, Calendar, List, LayoutGrid, Zap, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Clock, MapPin, Trash2, Calendar, List, LayoutGrid, Zap } from 'lucide-react';
 
 const DAYS_FR = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -60,7 +60,6 @@ const timeStrToY = (timeStr) => {
 
 // --- ItemCard ---
 const ItemCard = ({ item, canEdit, onDelete, style }) => {
-  const [isConfirming, setIsConfirming] = useState(false);
   const hasPlace = !!item.place_name;
   return (
     <div
@@ -77,77 +76,32 @@ const ItemCard = ({ item, canEdit, onDelete, style }) => {
       }}
     >
       {canEdit && (
-        <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '3px', zIndex: 10 }}>
-          {isConfirming ? (
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              style={{ display: 'flex', gap: '3px' }}
-            >
-              <button
-                onClick={e => { e.stopPropagation(); onDelete(item.id); }}
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: 'var(--primary)',
-                  color: 'white',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-                title="Confirmer la suppression"
-              >
-                <Check size={10} />
-              </button>
-              <button
-                onClick={e => { e.stopPropagation(); setIsConfirming(false); }}
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: 'rgba(255,255,255,0.2)',
-                  color: 'white',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-                title="Annuler"
-              >
-                <X size={10} />
-              </button>
-            </motion.div>
-          ) : (
-            <button
-              onClick={e => { e.stopPropagation(); setIsConfirming(true); }}
-              className="schedule-delete-btn"
-              style={{
-                width: '18px',
-                height: '18px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.95)',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                color: '#ff3b30',
-                padding: 0,
-                transition: 'all 0.2s ease'
-              }}
-              title="Supprimer"
-            >
-              <Trash2 size={10} />
-            </button>
-          )}
-        </div>
+        <button
+          onClick={e => { e.stopPropagation(); onDelete(item.id); }}
+          className="schedule-delete-btn"
+          style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.95)',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+            color: '#ff3b30',
+            padding: 0,
+            transition: 'all 0.2s ease',
+            zIndex: 10
+          }}
+          title="Supprimer"
+        >
+          <Trash2 size={10} />
+        </button>
       )}
       <p style={{ fontWeight: 700, fontSize: '0.75rem', paddingRight: '14px', marginBottom: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {item.title}
