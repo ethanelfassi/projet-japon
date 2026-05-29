@@ -147,12 +147,10 @@ button {
   border-radius: 12px;
 }
 
-.delete-btn {
+.delete-btn, .download-btn {
   position: absolute;
   top: 12px;
-  right: 12px;
   background: rgba(255, 255, 255, 0.95);
-  color: #ff4d6d;
   border: none;
   border-radius: 12px;
   width: 36px;
@@ -161,22 +159,30 @@ button {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
-  transform: translateY(-5px);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 10;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.photo-card:hover .delete-btn {
-  opacity: 1;
-  transform: translateY(0);
+.delete-btn {
+  right: 12px;
+  color: #ff3b30;
+}
+
+.download-btn {
+  color: #ff4d6d;
 }
 
 .delete-btn:hover {
-  background: #ff4d6d;
+  background: #ff3b30;
   color: white;
   transform: scale(1.1) rotate(5deg);
+}
+
+.download-btn:hover {
+  background: #ff4d6d;
+  color: white;
+  transform: scale(1.1) rotate(-5deg);
 }
 
 /* Stamp Shapes */
@@ -392,6 +398,7 @@ button {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
 }
+
 
 /* --- Photo Comments --- */
 .photo-comments-section {
@@ -669,8 +676,9 @@ button {
   }
 }
 
-.map-popup-btn:hover {
-  background-color: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 77, 109, 0.3);
+.schedule-delete-btn:hover {
+  background: #ff3b30 !important;
+  color: white !important;
+  transform: scale(1.15);
 }
+
