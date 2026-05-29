@@ -16,6 +16,7 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteCommentId, setConfirmDeleteCommentId] = useState(null);
 
   // Lightbox and comments states
   const [selectedPhoto, setSelectedPhoto] = useState(null);
@@ -345,35 +346,37 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                       }}
                       title="Supprimer la photo"
                     >
-                      <X size={12} />
+                      <Trash2 size={12} />
                     </button>
                   )}
                   
                   <AnimatePresence>
                     {confirmDeleteId === photo.id && (
                       <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
                         style={{
                           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                          background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', justifyContent: 'center', gap: '10px', zIndex: 20,
-                          borderRadius: '12px'
+                          background: 'rgba(15, 14, 18, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', gap: '8px', zIndex: 20,
+                          borderRadius: '12px', border: '1px solid rgba(255, 77, 109, 0.2)'
                         }}
                       >
-                        <p style={{ fontWeight: 600, fontSize: '0.8rem', color: 'white' }}>Supprimer ?</p>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.8rem', color: 'white', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Trash2 size={12} color="var(--primary)" /> Supprimer ?
+                        </p>
+                        <div style={{ display: 'flex', gap: '6px' }}>
                           <button 
                             className="btn-primary" 
-                            style={{ padding: '4px 10px', fontSize: '0.7rem', background: '#ff4d6d' }}
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', background: '#ff4d6d' }}
                             onClick={() => handleDeletePhoto(photo.id)}
                           >
                             Oui
                           </button>
                           <button 
                             className="btn-glass" 
-                            style={{ padding: '4px 10px', fontSize: '0.7rem', color: 'white' }}
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', color: 'white' }}
                             onClick={() => setConfirmDeleteId(null)}
                           >
                             Non
@@ -526,12 +529,58 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                             </span>
                           </div>
                           {(user?.role === 'admin' || user?.id === comment.user_id) && (
-                            <button 
-                              className="comment-delete-btn"
-                              onClick={() => handleDeleteComment(comment.id)}
-                            >
-                              <Trash2 size={12} />
-                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              {confirmDeleteCommentId === comment.id ? (
+                                <motion.div 
+                                  initial={{ scale: 0.8, opacity: 0 }} 
+                                  animate={{ scale: 1, opacity: 1 }} 
+                                  style={{ display: 'flex', gap: '4px', alignItems: 'center' }}
+                                >
+                                  <button
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                    style={{
+                                      background: 'var(--primary)',
+                                      color: 'white',
+                                      padding: '2px 8px',
+                                      fontSize: '0.7rem',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      height: '22px',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="Confirmer la suppression"
+                                  >
+                                    Oui
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteCommentId(null)}
+                                    style={{
+                                      background: 'rgba(255,255,255,0.1)',
+                                      color: 'white',
+                                      padding: '2px 8px',
+                                      fontSize: '0.7rem',
+                                      borderRadius: '6px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      height: '22px',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="Annuler"
+                                  >
+                                    Non
+                                  </button>
+                                </motion.div>
+                              ) : (
+                                <button 
+                                  className="comment-delete-btn"
+                                  onClick={() => setConfirmDeleteCommentId(comment.id)}
+                                  title="Supprimer le commentaire"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       ))

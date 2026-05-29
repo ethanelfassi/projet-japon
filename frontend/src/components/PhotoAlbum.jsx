@@ -15,6 +15,7 @@ const PhotoAlbum = ({ user }) => {
   const [photos, setPhotos] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'photos', 'stamps'
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteCommentId, setConfirmDeleteCommentId] = useState(null);
   const [comments, setComments] = useState([]);
   const [expandedComments, setExpandedComments] = useState({});
   const [newCommentTexts, setNewCommentTexts] = useState({});
@@ -190,36 +191,39 @@ const PhotoAlbum = ({ user }) => {
                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(photo.id); }}
                    title="Supprimer la photo"
                  >
-                   <X size={16} />
+                   <Trash2 size={16} />
                  </button>
                )}
 
                <AnimatePresence>
                  {confirmDeleteId === photo.id && (
                    <motion.div 
-                     initial={{ opacity: 0, y: 10 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: 10 }}
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     exit={{ opacity: 0, scale: 0.95 }}
                      style={{
                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                       background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column',
+                       background: 'rgba(15, 14, 18, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column',
                        alignItems: 'center', justifyContent: 'center', gap: '15px', zIndex: 20,
-                       borderRadius: photo.is_stamp ? '0' : '15px'
+                       borderRadius: photo.is_stamp ? '0' : '15px',
+                       border: '1px solid rgba(255, 77, 109, 0.2)'
                      }}
                      onClick={(e) => e.stopPropagation()}
                    >
-                     <p style={{ fontWeight: 600, fontSize: '0.9rem', color: 'white' }}>Supprimer ?</p>
+                     <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'white', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                       <Trash2 size={14} color="var(--primary)" /> Supprimer ?
+                     </p>
                      <div style={{ display: 'flex', gap: '10px' }}>
                        <button 
                          className="btn-primary" 
-                         style={{ padding: '5px 15px', fontSize: '0.8rem', background: '#ff4d6d' }}
+                         style={{ padding: '6px 16px', fontSize: '0.8rem', background: '#ff4d6d' }}
                          onClick={() => handleDelete(photo.id)}
                        >
                          Oui
                        </button>
                        <button 
                          className="btn-glass" 
-                         style={{ padding: '5px 15px', fontSize: '0.8rem', color: 'white' }}
+                         style={{ padding: '6px 16px', fontSize: '0.8rem', color: 'white' }}
                          onClick={() => setConfirmDeleteId(null)}
                        >
                          Non
@@ -440,13 +444,58 @@ const PhotoComments = ({
                     </span>
                   </div>
                   {(user?.role === 'admin' || user?.id === comment.user_id) && (
-                    <button 
-                      className="comment-delete-btn"
-                      onClick={() => onDeleteComment(comment.id)}
-                      title="Supprimer le commentaire"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      {confirmDeleteCommentId === comment.id ? (
+                        <motion.div 
+                          initial={{ scale: 0.8, opacity: 0 }} 
+                          animate={{ scale: 1, opacity: 1 }} 
+                          style={{ display: 'flex', gap: '4px', alignItems: 'center' }}
+                        >
+                          <button
+                            onClick={() => onDeleteComment(comment.id)}
+                            style={{
+                              background: 'var(--primary)',
+                              color: 'white',
+                              padding: '2px 8px',
+                              fontSize: '0.7rem',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              height: '22px',
+                              cursor: 'pointer'
+                            }}
+                            title="Confirmer la suppression"
+                          >
+                            Oui
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteCommentId(null)}
+                            style={{
+                              background: 'rgba(255,255,255,0.1)',
+                              color: 'white',
+                              padding: '2px 8px',
+                              fontSize: '0.7rem',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              height: '22px',
+                              cursor: 'pointer'
+                            }}
+                            title="Annuler"
+                          >
+                            Non
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <button 
+                          className="comment-delete-btn"
+                          onClick={() => setConfirmDeleteCommentId(comment.id)}
+                          title="Supprimer le commentaire"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}

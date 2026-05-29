@@ -173,10 +173,16 @@ button {
   color: #ff4d6d;
 }
 
+@keyframes wiggle {
+  0%, 100% { transform: scale(1.1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-6deg); }
+  75% { transform: scale(1.1) rotate(6deg); }
+}
+
 .delete-btn:hover {
   background: #ff3b30;
   color: white;
-  transform: scale(1.1) rotate(5deg);
+  animation: wiggle 0.3s ease-in-out infinite;
 }
 
 .download-btn:hover {
@@ -494,6 +500,7 @@ button {
   color: #ff4d6d;
   background: rgba(255, 77, 109, 0.1);
   opacity: 1;
+  animation: wiggle 0.3s ease-in-out infinite;
 }
 
 .comment-form {
@@ -679,7 +686,7 @@ button {
 .schedule-delete-btn:hover {
   background: #ff3b30 !important;
   color: white !important;
-  transform: scale(1.15);
+  animation: wiggle 0.3s ease-in-out infinite;
 }
 
 .profile-widget {
