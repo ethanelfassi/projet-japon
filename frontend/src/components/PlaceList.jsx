@@ -147,7 +147,11 @@ const PlaceList = ({ onAddPhoto, selectedPlaceDetails, setSelectedPlaceDetails, 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <h2>Bucket List <span style={{ color: 'var(--primary)' }}>Japon</span></h2>
         {(user?.role === 'editeur' || user?.role === 'admin') && (
-          <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}>
+          <button 
+            className="btn-primary" 
+            onClick={() => setShowAdd(!showAdd)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
             <Plus size={20} /> Ajouter
           </button>
         )}
