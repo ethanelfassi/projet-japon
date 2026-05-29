@@ -202,7 +202,7 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
         </button>
 
         <div style={{ marginBottom: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', paddingRight: '40px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', flexWrap: 'wrap' }}>
               {place.type === 'activity' ? <Zap size={20} /> : <MapPin size={20} />}
               <span style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '1px' }}>
@@ -345,7 +345,7 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                       }}
                       title="Supprimer la photo"
                     >
-                      <Trash2 size={12} />
+                      <X size={12} />
                     </button>
                   )}
                   

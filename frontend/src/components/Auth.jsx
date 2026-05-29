@@ -40,7 +40,7 @@ const Auth = ({ setUser, onAuthSuccess }) => {
         style={{ padding: '40px', borderRadius: '24px', textAlign: 'center' }}
       >
         <h2 style={{ marginBottom: '10px', fontSize: '2rem' }}>
-          {isLogin ? 'Bon retour' : 'Rejoindre'} <span style={{ color: 'var(--primary)' }}>Japon</span>
+          {isLogin ? 'Se connecter' : 'Créer un compte'}
         </h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>
           {isLogin ? 'Connecte-toi pour gérer ta bucket list et tes groupes.' : 'Crée un compte pour collaborer avec tes amis.'}
