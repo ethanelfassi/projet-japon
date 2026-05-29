@@ -27,8 +27,8 @@ const authenticateToken = async (req, res, next) => {
   if (!token) { req.user = null; return next(); }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { rows } = await pool.query('SELECT id, username, role, banned FROM users WHERE id = $1', [decoded.id]);
-    req.user = (rows[0] && !rows[0].banned) ? rows[0] : null;
+    const { rows } = await pool.query('SELECT id, username, role FROM users WHERE id = $1', [decoded.id]);
+    req.user = rows[0] ? rows[0] : null;
     next();
   } catch {
     req.user = null;
@@ -482,7 +482,7 @@ app.delete('/api/itinerary/:id', requireRole('editeur', 'admin'), async (req, re
 // --- Admin ---
 app.get('/api/admin/users', requireRole('admin'), async (req, res) => {
   const { rows } = await pool.query(`
-    SELECT u.id, u.username, u.role, u.banned, u.created_at,
+    SELECT u.id, u.username, u.role, u.created_at,
       COUNT(DISTINCT p.id) as places_count,
       COUNT(DISTINCT ph.id) as photos_count
     FROM users u
@@ -501,11 +501,29 @@ app.patch('/api/admin/users/:id/role', requireRole('admin'), async (req, res) =>
   res.json({ message: 'Role updated' });
 });
 
-app.patch('/api/admin/users/:id/ban', requireRole('admin'), async (req, res) => {
-  if (parseInt(req.params.id) === req.user.id) return res.status(400).json({ error: 'Cannot ban yourself' });
-  const { banned } = req.body;
-  await pool.query('UPDATE users SET banned = $1 WHERE id = $2', [banned, req.params.id]);
-  res.json({ message: 'Updated' });
+app.delete('/api/admin/users/:id', requireRole('admin'), async (req, res) => {
+  const userId = parseInt(req.params.id);
+  if (userId === req.user.id) return res.status(400).json({ error: 'Cannot delete yourself' });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM photo_comments WHERE user_id = $1 OR photo_id IN (SELECT id FROM photos WHERE uploaded_by = $1)', [userId]);
+    await client.query('DELETE FROM photos WHERE uploaded_by = $1', [userId]);
+    await client.query('DELETE FROM group_members WHERE user_id = $1 OR group_id IN (SELECT id FROM groups WHERE created_by = $1)', [userId]);
+    await client.query('DELETE FROM groups WHERE created_by = $1', [userId]);
+    await client.query('DELETE FROM itinerary WHERE created_by = $1', [userId]);
+    await client.query('DELETE FROM places WHERE created_by = $1', [userId]);
+    await client.query('DELETE FROM users WHERE id = $1', [userId]);
+    await client.query('COMMIT');
+    res.json({ message: 'User deleted' });
+  } catch (e) {
+    await client.query('ROLLBACK');
+    console.error(e);
+    res.status(500).json({ error: 'Failed to delete user' });
+  } finally {
+    client.release();
+  }
 });
 
 app.get('/api/admin/groups', requireRole('admin'), async (req, res) => {

@@ -72,11 +72,12 @@ const AdminPanel = ({ currentUser }) => {
     } catch { alert('Erreur lors du changement de rôle'); }
   };
 
-  const toggleBan = async (userId, banned) => {
+  const deleteUser = async (userId) => {
+    if (!confirm('Supprimer cet utilisateur ? Attention, cette action supprimera également tous ses lieux, photos, commentaires et groupes créés.')) return;
     try {
-      await axios.patch(`/api/admin/users/${userId}/ban`, { banned: !banned });
-      setUsers(users.map(u => u.id === userId ? { ...u, banned: !banned } : u));
-    } catch { alert('Erreur'); }
+      await axios.delete(`/api/admin/users/${userId}`);
+      setUsers(users.filter(u => u.id !== userId));
+    } catch { alert('Erreur lors de la suppression de l\'utilisateur'); }
   };
 
   const deleteGroup = async (groupId) => {
@@ -201,7 +202,7 @@ const AdminPanel = ({ currentUser }) => {
 
           {users.map((u, i) => (
             <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="glass" style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', opacity: u.banned ? 0.5 : 1 }}
+              className="glass" style={{ padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -211,7 +212,6 @@ const AdminPanel = ({ currentUser }) => {
                   <p style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {u.username}
                     {u.id === currentUser.id && <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>(vous)</span>}
-                    {u.banned && <span style={{ background: 'rgba(255,50,50,0.2)', color: '#ff5050', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '6px', fontWeight: 700 }}>BANNI</span>}
                   </p>
                   <p style={{ fontSize: '0.78rem', color: ROLE_COLORS[u.role], fontWeight: 600 }}>{ROLE_LABELS[u.role]}</p>
                   <div style={{ display: 'flex', gap: '12px', marginTop: '3px' }}>
@@ -231,10 +231,10 @@ const AdminPanel = ({ currentUser }) => {
                       {ROLE_LABELS[role]}
                     </button>
                   ))}
-                  <button onClick={() => toggleBan(u.id, u.banned)}
-                    style={{ padding: '5px 12px', fontSize: '0.75rem', background: u.banned ? 'rgba(0,255,127,0.15)' : 'rgba(255,50,50,0.15)', border: 'none', borderRadius: '8px', color: u.banned ? '#00ff7f' : '#ff5050', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
+                  <button onClick={() => deleteUser(u.id)}
+                    style={{ padding: '5px 12px', fontSize: '0.75rem', background: 'rgba(255,50,50,0.15)', border: 'none', borderRadius: '8px', color: '#ff5050', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}
                   >
-                    <Ban size={13} />{u.banned ? 'Débannir' : 'Bannir'}
+                    <Trash2 size={13} /> Supprimer
                   </button>
                 </div>
               )}
