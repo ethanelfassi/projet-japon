@@ -315,8 +315,18 @@ const PlaceDetailsModal = ({ place, onClose, onAddPhoto, onPhotoDeleted, user, o
                   </a>
 
                   {(user?.role === 'editeur' || user?.role === 'admin') && (
-                    <button className="delete-btn" onClick={() => setConfirmDeleteId(photo.id)}>
-                      <Trash2 size={14} />
+                    <button 
+                      className="delete-btn" 
+                      onClick={() => setConfirmDeleteId(photo.id)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '8px',
+                        right: '12px'
+                      }}
+                      title="Supprimer la photo"
+                    >
+                      <Trash2 size={12} />
                     </button>
                   )}
                   
